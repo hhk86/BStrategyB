@@ -42,7 +42,15 @@ if __name__ == "__main__":
     # print(df)
     # df.to_csv("E:/BTCdata/data.csv", index=None)
 
-    df = pd.read_csv("E:/BTCdata/data.csv")
-    df = df[df["date"] <= "2019-08-11"]
-    df.columns = ['date', 'time', 'price', 'Volume_(BTC)', 'Volume_(Currency)', 'Weighted_Price']
-    df.to_csv("E:/BTCdata/data.csv", index=False)
+    # df = pd.read_csv("E:/BTCdata/data.csv")
+    # df = df[df["date"] <= "2019-08-11"]
+    # df.columns = ['date', 'time', 'price', 'Volume_(BTC)', 'Volume_(Currency)', 'Weighted_Price']
+    # df.to_csv("E:/BTCdata/data.csv", index=False)
+
+    df = pd.read_csv("E:/BTCdata/btc.csv")
+    df_max = df.groupby(by="date")["price"].max()
+    df_min = df.groupby(by="date")["price"].min()
+    df_diff = df_max - df_min
+    df_diff.to_csv("E:/BTCdata/range.csv")
+    print(df_diff)
+    # print(df_max)

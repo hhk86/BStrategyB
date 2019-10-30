@@ -21,7 +21,6 @@ class Strategy():
             self.all_data = pd.read_csv("E:/BTCdata/" + ticker + ".csv")
         else:
             self.all_data = pd.read_csv(ticker)
-        self.multiplier_df = pd.read_csv("E:/BTCdata/multiplier.csv")
         self.date_list = sorted(list(set(self.all_data["date"])))
         self.all_data["quantity"] = self.all_data["Volume_(BTC)"].apply(lambda x: round(x, 2))
         self.x = list(range(1440))
@@ -91,11 +90,7 @@ class Strategy():
             self.y = df["price"].tolist()
             self.q = df["quantity"]. tolist()
             raw_slope_list = [0,] + list(np.diff(self.y))
-            multiplier = self.multiplier_df[self.multiplier_df["date"] == date]
-            multiplier = multiplier["multiplier"].tolist()[0]
-            multiplier = multiplier  / 2 + self.y[0] / 1000 / 2
-            # self.slope_list = [int(round(t / self.y[0] * 2000)) for t in raw_slope_list]
-            self.slope_list = [int(round(t / multiplier * 2)) for t in raw_slope_list]
+            self.slope_list = [int(round(t / self.y[0] * 1000)) for t in raw_slope_list]
             self.y_min = df["price"].min()
             self.y_max = df["price"].max()
             self.y_mid = 0.5 * (self.y_min + self.y_max)
@@ -122,7 +117,7 @@ class Strategy():
 
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
-        fig, ax = plt.subplots(figsize=(30, 15))
+        fig, ax = plt.subplots(figsize=(20, 10))
         ax.plot(self.x, self.y, color="lightgray", linewidth=1)
         ax.plot(self.x, self.y, ".", color="lightgray", markersize=2)
         for i in range(1440):
@@ -134,9 +129,9 @@ class Strategy():
             else:
                 color = "blue"
             # ax.plot([self.x[i],], [self.y[i], ], marker=".", color=color, markersize=1)
-            if self.date == "2017-12-27":
-                ax.text(self.x[i] - 1, self.y[i], str(abs(slope)), fontsize=6, color=color)
-            elif abs(slope) > 3:
+            if self.date == "2017-01-16":
+                ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
+            elif abs(slope) > 1:
                 ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
             # ax.plot([self.x[i], self.x[i] + 0.001], [self.y_mid, self.y_mid + self.q[i] / self.y[0] * 50] , color=color)
         plt.title(self.date, size=15)
@@ -157,26 +152,22 @@ class Strategy():
         if n < 8:
             return None
         h8, h7, h6, h5, h4, h3, h2, h1 = self.slope_list[n - 7 : n + 1]
-        if self.count(2, 6, h1, h2):
+        if self.count(2, 3, h1, h2):
             return "RAPB1"
-        if self.count(2, 6, h1, h2, h3) and min([h1, h2, h3]) >= 0 and h1 + h2 + h3 >= 14:
+        if self.count(2, 3, h1, h2, h3) and min([h1, h2, h3]) >= 0 and h1 + h2 + h3 >= 7:
             return "RAPB2"
         # if self.count(3, 2, h1, h2, h3, h4) and min([h1, h2, h3, h4]) >= -1 and h1 + h2 + h3 + h4 >= 8:
         #     return "RAPB3"
         # if self.count(2, 2, h1, h2, h3, h4) and min([h1, h2, h3, h4]) >= 0 and h1 + h2 + h3 + h4 >= 8:
         #     return "RAPB3"
 
-        if self.count(2, 4, h1, h2, h3, h4, h5) and self.count(4, 2, h1, h2 ,h3 ,h4, h5)\
-                and min([h1, h2, h3, h4, h5]) >= 0 and h1 + h2 + h3 + h4 + h5 >= 10:
+        if self.count(2, 2, h1, h2, h3, h4, h5) and self.count(4, 1, h1, h2 ,h3 ,h4, h5)\
+                and min([h1, h2, h3, h4, h5]) >= 0 and h1 + h2 + h3 + h4 + h5 >= 5:
             return "RAPB3"
 
-        if self.count(1, 4, h1, h2, h3, h4, h5, h6, h7, h8) and self.count(4, 2, h1, h2, h3, h4, h5, h6, h7, h8)\
-            and self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 12:
+        if self.count(1, 2, h1, h2, h3, h4, h5, h6, h7, h8) and self.count(4, 1, h1, h2, h3, h4, h5, h6, h7, h8)\
+            and self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 6:
             return "RAPB4"
-
-        if self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and min([h1, h2, h3, h4, h5, h6, h7, h8]) >= -2\
-                and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 8:
-            return "RAPB5"
 
     def test_plot_signal(self, ax, n, sig_type):
         if sig_type is None:
@@ -188,8 +179,6 @@ class Strategy():
         elif sig_type == "RAPB3":
             diff = 4
         elif sig_type == "RAPB4":
-            diff = 8
-        elif sig_type == "RAPB5":
             diff = 8
         ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color="gold")
         ax.plot([self.x[n],], [self.y[n],], marker='*', color="red")
