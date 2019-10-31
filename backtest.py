@@ -30,7 +30,9 @@ class Strategy():
         self.plot = True
 
     def multi_backtest(self, arg_dict=None, plot=False):
-
+        # os.makedirs("backtest_selected")
+        if os.path.exists("daily_return.csv"):
+            os.remove("daily_return.csv")
         if not os.path.exists(self.ticker + "/data_slice_9.csv"):
             self.slice()
         q = Queue()
@@ -82,7 +84,11 @@ class Strategy():
         re = round(self.pnl / self.y[0] * 100, 2)
         self.ax.set_title(date + " Daily Return: " + str(re) + '%' )
         self.fig.savefig("backtest/" + self.date + ".png")
+        # if re != 0:
+        #     self.fig.savefig("backtest_selected/" + self.date + ".png")
         plt.close()
+        re_df = pd.DataFrame([[date, re], ], columns=["date", "return"])
+        re_df.to_csv("daily_return.csv", mode='a', index=None, header=None)
         print(date)
 
     def initDailyParam(self, pos_type="all", date=None, i=None) -> None:
@@ -253,23 +259,25 @@ class Strategy():
         if n < 8:
             return
         h8, h7, h6, h5, h4, h3, h2, h1 = self.slope_list[n - 7 : n + 1]
+        # if False:
+        #     pass
         if self.count(2, 6, h1, h2):
             sig_type, diff = "RAP1", 2
-        elif self.count(2, 6, h1, h2, h3) and min([h1, h2, h3]) >= 0 and h1 + h2 + h3 >= 14:
-            sig_type, diff = "RAP2", 3
-        elif self.count(2, 4, h1, h2, h3, h4, h5) and self.count(4, 2, h1, h2 ,h3 ,h4, h5)\
-                and min([h1, h2, h3, h4, h5]) >= 0 and h1 + h2 + h3 + h4 + h5 >= 10:
-            sig_type, diff = "RAP3", 4
-        elif self.count(1, 4, h1, h2, h3, h4, h5, h6, h7, h8) and self.count(4, 2, h1, h2, h3, h4, h5, h6, h7, h8)\
-            and self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 12:
-            sig_type, diff = "RAP4", 8
-        elif self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and min([h1, h2, h3, h4, h5, h6, h7, h8]) >= -2\
-                and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 8:
-            sig_type, diff =  "RAP5", 8
+        # elif self.count(2, 6, h1, h2, h3) and min([h1, h2, h3]) >= 0 and h1 + h2 + h3 >= 14:
+        #     sig_type, diff = "RAP2", 3
+        # elif self.count(2, 4, h1, h2, h3, h4, h5) and self.count(4, 2, h1, h2 ,h3 ,h4, h5)\
+        #         and min([h1, h2, h3, h4, h5]) >= 0 and h1 + h2 + h3 + h4 + h5 >= 10:
+        #     sig_type, diff = "RAP3", 4
+        # elif self.count(1, 4, h1, h2, h3, h4, h5, h6, h7, h8) and self.count(4, 2, h1, h2, h3, h4, h5, h6, h7, h8)\
+        #     and self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 12:
+        #     sig_type, diff = "RAP4", 8
+        # elif self.count(7, 0, h1, h2, h3, h4, h5, h6, h7, h8) and min([h1, h2, h3, h4, h5, h6, h7, h8]) >= -2\
+        #         and h1 + h2 + h3 + h4 + h5 + h6 + h7 + h8 >= 8:
+        #     sig_type, diff =  "RAP5", 8
         else:
             return
         var1, var2, var3, var4 = self.previous_trend(n - diff)
-        if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 4.5 and var4 < 4.5:
+        if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 8 and var4 < 8:
             self.plotSignal(n, diff, color=color)
             if direction == 'B':
                 self.RAPB_num = 1
@@ -319,6 +327,27 @@ class Strategy():
         else:
             return round(np.std(var_ls), 1)
 
+
+    def PNLcurve(self):
+        df = pd.read_csv("daily_return.csv")
+        df.columns = ["date", "100return"]
+        df.sort_values(by="date", inplace=True)
+        df["daily_com"] = df.loc[:, "100return"].apply(lambda x: 1 + x / 100)
+        df["asset"] = df["daily_com"].cumprod()
+        final_asset = round(df["asset"].tolist()[-1], 2)
+        plt.plot(range(len(df)), df["asset"])
+        plt.savefig("asset_" + str(final_asset) + ".png")
+        plt.close()
+        df["level_return"] = df["100return"] * 5
+        df["level_com"] = df["level_return"].apply(lambda x: 1 + x / 100)
+        df["level_asset"] = df["level_com"].cumprod()
+        level_asset = round(df["level_asset"].tolist()[-1], 2)
+        plt.plot(range(len(df)), df["level_asset"])
+        plt.savefig("level_asset_" + str(level_asset) + ".png")
+        plt.close()
+
+
 if __name__ == "__main__":
     obj = Strategy("btc")
     obj.multi_backtest()
+    obj.PNLcurve()
