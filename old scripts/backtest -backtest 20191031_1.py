@@ -18,10 +18,10 @@ class Strategy():
     def __init__(self, ticker) -> None:
         if 'slice' not in ticker:
             self.ticker = ticker
-            self.all_data = pd.read_csv(ticker + ".csv")
+            self.all_data = pd.read_csv("E:/BTCdata/" + ticker + ".csv")
         else:
             self.all_data = pd.read_csv(ticker)
-        self.multiplier_df = pd.read_csv("multiplier.csv")
+        self.multiplier_df = pd.read_csv("E:/BTCdata/multiplier.csv")
         self.date_list = sorted(list(set(self.all_data["date"])))
         self.all_data["quantity"] = self.all_data["Volume_(BTC)"].apply(lambda x: round(x, 2))
         self.x = list(range(1440))
@@ -31,12 +31,12 @@ class Strategy():
 
     def multi_backtest(self, arg_dict=None, plot=False):
 
-        if not os.path.exists(self.ticker + "/data_slice_9.csv"):
+        if not os.path.exists("E:\\data_slice\\" + self.ticker + "\\data_slice_9.csv"):
             self.slice()
         q = Queue()
         jobs = list()
         for i in range(0, 10):
-            ticker = self.ticker + "/data_slice_" + str(i) + ".csv"
+            ticker = "E:\\data_slice\\" + self.ticker + "\\data_slice_" + str(i) + ".csv"
             p = Process(target=backtest_slice, args=(ticker,))
             jobs.append(p)
             p.start()
@@ -51,16 +51,16 @@ class Strategy():
         n = process_num
         N = len(self.date_list)
         try:
-            os.removedirs("btc/" + self.ticker)
+            os.removedirs("E:\\data_slice\\" + self.ticker)
             print("Re-writing the data slice of", self.ticker)
         except:
             print("Writing new data slice of", self.ticker)
-        os.makedirs("btc/" + self.ticker)
+        os.makedirs("E:\\data_slice\\" + self.ticker)
         for i in range(0, n):
             date_scope = self.date_list[math.floor(i * (N / n)): math.floor((i + 1) * (N / n))]
             data_slice = self.all_data[self.all_data["date"].apply(lambda s: True if s in date_scope else False)]
-            data_slice.to_csv("btc/" + "\\data_slice_" + str(i) + ".csv", index=False)
-        print("Slice data into " + str(n) + " part.\n Save data slice to: " + "btc/"  + self.ticker)
+            data_slice.to_csv("E:\\data_slice\\" + self.ticker + "\\data_slice_" + str(i) + ".csv", index=False)
+        print("Slice data into " + str(n) + " part.\n Save data slice to: " + "E:\\data_slice\\" + self.ticker)
 
     def backtest(self) -> None:
         # self.stat_df = pd.DataFrame(columns=["sig_type", "direction", "open_price", "close_price", "pnl", "date"])
@@ -91,11 +91,11 @@ class Strategy():
             self.y = df["price"].tolist()
             self.q = df["quantity"]. tolist()
             raw_slope_list = [0,] + list(np.diff(self.y))
-            self.multiplier = self.multiplier_df[self.multiplier_df["date"] == date]
-            self.multiplier = self.multiplier["multiplier"].tolist()[0]
-            self.multiplier = self.multiplier / 2 + self.y[0] / 1000 / 2
+            multiplier = self.multiplier_df[self.multiplier_df["date"] == date]
+            multiplier = multiplier["multiplier"].tolist()[0]
+            multiplier = multiplier  / 2 + self.y[0] / 1000 / 2
             # self.slope_list = [int(round(t / self.y[0] * 2000)) for t in raw_slope_list]
-            self.slope_list = [int(round(t / self.multiplier * 2)) for t in raw_slope_list]
+            self.slope_list = [int(round(t / multiplier * 2)) for t in raw_slope_list]
             self.y_min = df["price"].min()
             self.y_max = df["price"].max()
             self.y_mid = 0.5 * (self.y_min + self.y_max)
@@ -153,26 +153,6 @@ class Strategy():
         else:
             return False
 
-    def previous_trend(self, n: int):
-        if n < 8:
-            var1 = 0
-        else:
-            var1 = round((self.y[n + 1] - self.y[n - 7]) / self.multiplier / 8, 2)
-        if n < 30:
-            var2 = 0
-        else:
-            var2 = round((self.y[n + 1] - self.y[n - 29]) / self.multiplier / 30, 2)
-        if n < 60:
-            var3 = 0
-        else:
-            # var3 = round(np.mean([abs(h) for h in self.slope_list[n - 59: n + 1]]), 1)
-            var3 = self.volitility(self.slope_list[n - 59: n + 1])
-        if n < 240:
-            var4 = 0
-        else:
-            # var4 = round(np.mean([abs(h) for h in self.slope_list[n - 239: n + 1]]), 1)
-            var4 = self.volitility(self.slope_list[n - 239: n + 1])
-        return var1, var2, var3, var4
 
 
     def RAP_Signal(self, n: int):
@@ -213,38 +193,14 @@ class Strategy():
             diff = 8
         elif sig_type == "RAPB5":
             diff = 8
-        var1, var2, var3, var4 = self.previous_trend(n - diff)
-        if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 4.5 and var4 < 4.5:
-            ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color="gold")
-            ax.plot([self.x[n],], [self.y[n],], marker='*', color="red")
-            # ax.text(self.x[n], self.y[n]-20, sig_type[-1])
-            ax.text(self.x[n - diff], self.y[n - diff]- 10, str('(' + str(var1) + ',' + str(var2) + ',' + str(var3) + ',' + str(var4) +')'))
+        ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color="gold")
+        ax.plot([self.x[n],], [self.y[n],], marker='*', color="red")
+        ax.text(self.x[n], self.y[n]-20, sig_type[-1])
 
 
-    def volitility(self,  ls):
-        N = len(ls)
-        assembled_ls = list()
-        j = 0
-        while j < N and ls[j] == 0:
-            j += 1
-        assembled_ls.append(ls[j])
-        sign = np.sign(ls[j])
-        for item in ls[j + 1: ]:
-            if np.sign(item) * sign >= 0:
-                assembled_ls[-1] += item
-            else:
-                assembled_ls.append(item)
-                sign *= -1
-        if len(assembled_ls) == 0:
-            raise ValueError("Empty assembled list!!!")
-        var_ls = list()
-        for item in assembled_ls:
-            if abs(item) < 10:
-                var_ls.append(item)
-        if len(var_ls) == 0:
-            return 0
-        else:
-            return round(np.std(var_ls), 1)
+
+
+
 
 if __name__ == "__main__":
     obj = Strategy("btc")
