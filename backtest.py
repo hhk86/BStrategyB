@@ -82,8 +82,8 @@ class Strategy():
 
 
         for n in range(1440):
-            self.RAP_Signal(n, 'B')
-            # self.RAP_Signal(n, 'S')
+            # self.RAP_Signal(n, 'B')
+            self.RAP_Signal(n, 'S')
 
         self.ax.set_xticks(self.xtick, self.xticklabel)
         re = round(self.pnl / self.y[0] * 100, 2)
