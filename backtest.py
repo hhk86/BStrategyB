@@ -9,14 +9,15 @@ import random
 from multiprocessing import Process, Queue
 import shutil
 
-def backtest_slice(ticker):
-    obj = Strategy(ticker)
-    obj.backtest()
+def backtest_slice(q, ticker, plot=False):
+    obj = Strategy(ticker, plot=plot)
+    daily_return_slice = obj.backtest()
+    q.put(daily_return_slice)
 
 
 
 class Strategy():
-    def __init__(self, ticker) -> None:
+    def __init__(self, ticker, plot=False) -> None:
         if 'slice' not in ticker:
             self.ticker = ticker
             self.all_data = pd.read_csv(ticker + ".csv")
@@ -28,7 +29,7 @@ class Strategy():
         self.x = list(range(1440))
         self.xtick = list(range(0, 1441, 120))
         self.xticklabel = list(range(0, 25, 2))
-        self.plot = True
+        self.plot = plot
 
     def multi_backtest(self, arg_dict=None, plot=False):
         try:
@@ -42,16 +43,18 @@ class Strategy():
             self.slice()
         q = Queue()
         jobs = list()
+        re_df = pd.DataFrame()
         for i in range(0, 10):
             ticker = self.ticker + "/data_slice_" + str(i) + ".csv"
-            p = Process(target=backtest_slice, args=(ticker,))
+            p = Process(target=backtest_slice, args=(q, ticker, plot))
             jobs.append(p)
             p.start()
             print("Start process" + str(i))
-        # for i in range(0, 10):
-        #     df = df.append(q.get())
+        for i in range(0, 10):
+            re_df = re_df.append(q.get())
         for job in jobs:
             job.join()
+        self.re_df = re_df
 
 
     def slice(self, process_num=10):
@@ -71,30 +74,36 @@ class Strategy():
 
     def backtest(self) -> None:
         # self.stat_df = pd.DataFrame(columns=["sig_type", "direction", "open_price", "close_price", "pnl", "date"])
+        daily_return_slice = pd.DataFrame()
         for i in range(len(self.date_list)):
-            self.backtest_oneday(i)
+            daily_return_slice = daily_return_slice.append(self.backtest_oneday(i))
+        return daily_return_slice
 
     def backtest_oneday(self, i: int) -> None:
         date = self.date_list[i]
         self.initDailyParam(pos_type="all", date=date, i=i)
         self.ax = None
-        self.initPlot()
+        if self.plot:
+            self.initPlot()
 
 
         for n in range(1440):
-            # self.RAP_Signal(n, 'B')
+            self.RAP_Signal(n, 'B')
             self.RAP_Signal(n, 'S')
 
-        self.ax.set_xticks(self.xtick, self.xticklabel)
         re = round(self.pnl / self.y[0] * 100, 2)
-        self.ax.set_title(date + " Daily Return: " + str(re) + '%' )
-        self.fig.savefig("backtest/" + self.date + ".png")
-        if re != 0:
-            self.fig.savefig("backtest_selected/" + self.date + ".png")
-        plt.close()
         re_df = pd.DataFrame([[date, re], ], columns=["date", "return"])
-        re_df.to_csv("daily_return.csv", mode='a', index=None, header=None)
+        # re_df.to_csv("daily_return.csv", mode='a', index=None, header=None)
+
+        if self.plot:
+            self.ax.set_xticks(self.xtick, self.xticklabel)
+            self.ax.set_title(date + " Daily Return: " + str(re) + '%' )
+            self.fig.savefig("backtest/" + self.date + ".png")
+            if re != 0:
+                self.fig.savefig("backtest_selected/" + self.date + ".png")
+            plt.close()
         print(date)
+        return re_df
 
     def initDailyParam(self, pos_type="all", date=None, i=None) -> None:
         if pos_type == "all":
@@ -268,19 +277,21 @@ class Strategy():
             b_trigger_price = self.calTriggerPrice(n, 'B')
             if self.y[n] < b_trigger_price:
                 self.pnl += self.y[n] - self.RAPB_start_price
-                self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
-                cl = "red" if self.y[n] > self.RAPB_start_price else "blue"
-                self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
-                             [self.RAPB_start_price, self.y[n]], color=cl)
+                if self.plot:
+                    cl = "red" if self.y[n] > self.RAPB_start_price else "blue"
+                    self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
+                    self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
+                                 [self.RAPB_start_price, self.y[n]], color=cl)
                 self.initDailyParam(pos_type='B')
         if direction == 'S' and n > 2 and self.RAPS_num > 0:
             s_trigger_price =self.calTriggerPrice(n, 'S')
             if self.y[n] > s_trigger_price:
                 self.pnl += self.RAPS_start_price - self.y[n]
-                self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
-                cl = "red" if self.y[n] < self.RAPS_start_price else "blue"
-                self.ax.plot([self.RAPS_start_pos, self.RAPS_start_pos + 0.001],
-                             [self.RAPS_start_price,  2 * self.RAPS_start_price - self.y[n]], color=cl)
+                if self.plot:
+                    cl = "red" if self.y[n] < self.RAPS_start_price else "blue"
+                    self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
+                    self.ax.plot([self.RAPS_start_pos, self.RAPS_start_pos + 0.001],
+                                 [self.RAPS_start_price,  2 * self.RAPS_start_price - self.y[n]], color=cl)
                 self.initDailyParam(pos_type='S')
 
 
@@ -297,18 +308,19 @@ class Strategy():
         sig_type = None
         if False:
             pass
-        elif self.count(2, 6, h1, h2):
-            sig_type, diff = "RAP1", 2
-        elif r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1 and min([h1, h2, h3, h4, h5]) >= -2:
-            sig_type, diff = "RAP2", 6
+        elif direction == 'B' and self.count(2, 6, h1, h2):
+            sig_type, diff = "RAPB1", 2
+        elif direction == 'B' and r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1 and min([h1, h2, h3, h4, h5]) >= -2:
+            sig_type, diff = "RAPB2", 6
         else:
             return
-        if sig_type in ["RAP1",]:
+        if sig_type in ["RAPB1",]:
             var1, var2, var3, var4 = self.previous_trend(n - diff)
         else:
             var1, var2, var3, var4 = 100, 100, 100, 100
-        if (var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6) or sig_type == "RAP2":
-            self.plotSignal(n, diff, color=color)
+        if (var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6) or sig_type in["RAPB2", "RAPS2"]:
+            if self.plot:
+                self.plotSignal(n, diff, color=color)
             if direction == 'B':
                 self.RAPB_num = 1
                 self.RAPB_sig_type = sig_type
@@ -359,7 +371,8 @@ class Strategy():
 
 
     def PNLcurve(self):
-        df = pd.read_csv("daily_return.csv")
+        # df = pd.read_csv("daily_return.csv")
+        df = self.re_df
         df.columns = ["date", "100return"]
         df.sort_values(by="date", inplace=True)
         df["daily_com"] = df.loc[:, "100return"].apply(lambda x: 1 + x / 100)
