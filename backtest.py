@@ -15,7 +15,6 @@ def backtest_slice(q, ticker, plot=False):
     q.put(daily_return_slice)
 
 
-
 class Strategy():
     def __init__(self, ticker, plot=False) -> None:
         if 'slice' not in ticker:
@@ -31,7 +30,7 @@ class Strategy():
         self.xticklabel = list(range(0, 25, 2))
         self.plot = plot
 
-    def multi_backtest(self, arg_dict=None, plot=False):
+    def multi_backtest(self, plot=False):
         try:
             shutil.rmtree("backtest_selected")
         except FileNotFoundError:
@@ -56,7 +55,6 @@ class Strategy():
             job.join()
         self.re_df = re_df
 
-
     def slice(self, process_num=10):
         n = process_num
         N = len(self.date_list)
@@ -73,7 +71,6 @@ class Strategy():
         print("Slice data into " + str(n) + " part.\n Save data slice to: " + "btc/"  + self.ticker)
 
     def backtest(self) -> None:
-        # self.stat_df = pd.DataFrame(columns=["sig_type", "direction", "open_price", "close_price", "pnl", "date"])
         daily_return_slice = pd.DataFrame()
         for i in range(len(self.date_list)):
             daily_return_slice = daily_return_slice.append(self.backtest_oneday(i))
@@ -85,7 +82,6 @@ class Strategy():
         self.ax = None
         if self.plot:
             self.initPlot()
-
 
         for n in range(1440):
             self.RAP_Signal(n, 'B')
@@ -135,7 +131,6 @@ class Strategy():
             self.RAPS_nadir_pos = None
             self.RAPS_nadir_price = None
 
-
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
         self.fig, self.ax = plt.subplots(figsize=(20, 10))
@@ -149,13 +144,12 @@ class Strategy():
                 color = "green"
             else:
                 color = "blue"
-            # if self.date == "2017-02-01":
-            #     self.ax.text(self.x[i] - 1, self.y[i], str(abs(slope)), fontsize=6, color=color)
-            if abs(slope) > 3:
+            if self.date == "20170402":
+                self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
+            elif abs(slope) > 3:
                 self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=2)
         plt.title(self.date, size=15)
-
 
     def count(self, n: int, threshold: int, *args):
         k = 0
@@ -186,30 +180,17 @@ class Strategy():
             var4 = self.volitility(self.slope_list[n - 239: n + 1])
         return var1, var2, var3, var4
 
-
     def previous_range(self, n:int):
-        if n < 65:
+        if n < 60:
             range1 = None
         else:
-            ls = self.y[n - 65: n - 5]
+            ls = self.y[n - 60: n]
             ls.pop(ls.index(max(ls)))
             ls.pop(ls.index(max(ls)))
             ls.pop(ls.index(min(ls)))
             ls.pop(ls.index(min(ls)))
             range1 = max(ls) - min(ls)
-        if n < 125:
-            range2 = None
-        else:
-            ls = self.y[n - 125: n - 5]
-            ls.pop(ls.index(max(ls)))
-            ls.pop(ls.index(max(ls)))
-            ls.pop(ls.index(max(ls)))
-            ls.pop(ls.index(max(ls)))
-            ls.pop(ls.index(min(ls)))
-            ls.pop(ls.index(min(ls)))
-            ls.pop(ls.index(min(ls)))
-            range2 = max(ls) - min(ls)
-        return range1, range2
+        return range1
 
 
 
@@ -303,22 +284,40 @@ class Strategy():
             return
         if n < 8:
             return
-        h8, h7, h6, h5, h4, h3, h2, h1 = self.slope_list[n - 7 : n + 1]
-        r1, r2 = self.previous_range(n)
+        h8, h7, h6, h5, h4, h3, h2, h1 = self.slope_list[n - 7: n + 1]
         sig_type = None
-        if False:
-            pass
-        elif direction == 'B' and self.count(2, 6, h1, h2):
+        check_buy_signal = True
+        check_sell_signal = True
+        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
+            var1, var2, var3, var4 = self.previous_trend(n - 2)
+            # if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6: # Check stable condition
+            # if var3 < 6 and var4 < 6:  # Check stable condition
             sig_type, diff = "RAPB1", 2
-        elif direction == 'B' and r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1 and min([h1, h2, h3, h4, h5]) >= -2:
-            sig_type, diff = "RAPB2", 6
-        else:
-            return
-        if sig_type in ["RAPB1",]:
-            var1, var2, var3, var4 = self.previous_trend(n - diff)
-        else:
-            var1, var2, var3, var4 = 100, 100, 100, 100
-        if (var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6) or sig_type in["RAPB2", "RAPS2"]:
+            check_buy_signal = False
+        if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+                sig_type, diff = "RAPB2", 6
+                check_buy_signal = False
+        # if check_sell_signal and direction == 'S' and h1 >= 2 and self.count(2, 3, h2, h3, h4) and min([h2, h3, h4]) >= -2: # Check rapid condition
+        #     sig_type, diff = "RAPS1", 6
+        #     check_sell_signal = False
+        #
+        # if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
+        #     var1, var2, var3, var4 = self.previous_trend(n - 2)
+        #     if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6: # Check stable condition
+        #         sig_type, diff = "RAPB1", 2
+        #         check_sell_signal = False
+
+
+
+        if check_sell_signal and direction == 'S'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1 and max(self.slope_list[n - 5: n + 1]) <= 6:  # Check stable condition
+                sig_type, diff = "RAPS2", 6
+                check_sell_signal = False
+
+        if not check_buy_signal or not check_sell_signal:
             if self.plot:
                 self.plotSignal(n, diff, color=color)
             if direction == 'B':
@@ -341,8 +340,6 @@ class Strategy():
     def plotSignal(self, n, diff, color):
         self.ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color=color)
         self.ax.plot([self.x[n],], [self.y[n],], marker='o', color=color, markersize=5)
-            # self.ax.text(self.x[n - diff], self.y[n - diff]- 10, str('(' + str(var1) + ',' + str(var2) + ',' + str(var3) + ',' + str(var4) +')'))
-
 
     def volitility(self,  ls):
         N = len(ls)
@@ -369,9 +366,7 @@ class Strategy():
         else:
             return round(np.std(var_ls), 1)
 
-
     def PNLcurve(self):
-        # df = pd.read_csv("daily_return.csv")
         df = self.re_df
         df.columns = ["date", "100return"]
         df.sort_values(by="date", inplace=True)
@@ -393,5 +388,5 @@ class Strategy():
 
 if __name__ == "__main__":
     obj = Strategy("btc")
-    obj.multi_backtest()
+    obj.multi_backtest(plot=True)
     obj.PNLcurve()
