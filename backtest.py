@@ -174,13 +174,17 @@ class Strategy():
             var2 = round((self.yplus[n] - self.yplus[n - 29]) / self.multiplier / 30, 2)
         if n < 60:
             var3 = 0
+            var5 = 0
         else:
             var3 = self.volitility(self.slope_list[n - 59: n + 1])
+            var5 = abs(round((self.yplus[n] - self.yplus[n - 59]) / self.multiplier / 60, 2))
         if n < 240:
             var4 = 0
+            var6 = 0
         else:
             var4 = self.volitility(self.slope_list[n - 239: n + 1])
-        return var1, var2, var3, var4
+            var6 = abs(round((self.yplus[n] - self.yplus[n - 239]) / self.multiplier / 240, 2))
+        return var1, var2, var3, var4, var5, var6
 
     def previous_range(self, n:int):
         if n < 60:
@@ -314,12 +318,12 @@ class Strategy():
 
 
         if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
-            var1, var2, var3, var4 = self.previous_trend(n - 2)
-            if var1 >= 0.5 and var2 >= 0.25: # Check stable condition
+            var1, var2, var3, var4, var5, var6 = self.previous_trend(n - 2)
+            if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
                 sig_type, diff = "RAPB1", 2
                 check_sell_signal = False
                 if self.plot:
-                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var4) +')')
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var5) +',' + str(var6) +')')
                     self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
                     self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
                     if n > 62:
