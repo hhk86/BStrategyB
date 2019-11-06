@@ -99,6 +99,8 @@ class Strategy():
                 self.fig.savefig("backtest_selected/" + self.date + ".png")
             plt.close()
         print(date)
+        if re < - 1:
+            print("------------", date, re, "-------------------")
         return re_df
 
     def initDailyParam(self, pos_type="all", date=None, i=None) -> None:
@@ -144,7 +146,7 @@ class Strategy():
                 color = "green"
             else:
                 color = "blue"
-            if self.date == "20170402":
+            if self.date == "":
                 self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
             elif abs(slope) > 3:
                 self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
@@ -165,11 +167,11 @@ class Strategy():
         if n < 8:
             var1 = 0
         else:
-            var1 = round((self.yplus[n + 1] - self.yplus[n - 7]) / self.multiplier / 8, 2)
+            var1 = round((self.yplus[n] - self.yplus[n - 7]) / self.multiplier / 8, 2)
         if n < 30:
             var2 = 0
         else:
-            var2 = round((self.yplus[n + 1] - self.yplus[n - 29]) / self.multiplier / 30, 2)
+            var2 = round((self.yplus[n] - self.yplus[n - 29]) / self.multiplier / 30, 2)
         if n < 60:
             var3 = 0
         else:
@@ -191,8 +193,6 @@ class Strategy():
             ls.pop(ls.index(min(ls)))
             range1 = max(ls) - min(ls)
         return range1
-
-
 
     def calTriggerPrice(self, n: int, direction: str):
         price = self.y[n]
@@ -291,7 +291,7 @@ class Strategy():
 
 
         # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
-        #     var1, var2, var3, var4 = self.previous_trend(n - 2)
+        #     # var1, var2, var3, var4 = self.previous_trend(n - 2)
         #     # if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6: # Check stable condition
         #     # if var3 < 6 and var4 < 6:  # Check stable condition
         #     sig_type, diff = "RAPB1", 2
@@ -303,6 +303,31 @@ class Strategy():
         #         check_buy_signal = False
 
 
+        # if check_sell_signal and direction == 'S' and h1>= 7: # Check rapid condition
+        #     var1, var2, var3, var4 = self.previous_trend(n - 1)
+        #     if var1 >= 0.5 and var2 >= 0.25 and var3 < 4.5 and var4 < 4.5: # Check stable condition
+        #         sig_type, diff = "RAPB0", 1
+        #         check_sell_signal = False
+        #         self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var4) +')')
+        #         self.ax.plot([self.x[n - 1 - 8], self.x[n - 1]], [self.y[n - 1 - 8], self.y[n - 1]], color="cyan")
+        #         self.ax.plot([self.x[n - 1 - 30], self.x[n - 1]], [self.y[n - 1 - 30], self.y[n - 1]], color="blue")
+
+
+        if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
+            var1, var2, var3, var4 = self.previous_trend(n - 2)
+            if var1 >= 0.5 and var2 >= 0.25: # Check stable condition
+                sig_type, diff = "RAPB1", 2
+                check_sell_signal = False
+                if self.plot:
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var4) +')')
+                    self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
+                    self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
+                    if n > 62:
+                        self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
+                    if n > 240:
+                        self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
+
+
 
         # if check_sell_signal and direction == 'S'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
         #     r1 = self.previous_range(n - 5)
@@ -310,9 +335,6 @@ class Strategy():
         #         sig_type, diff = "RAPS2", 6
         #         check_sell_signal = False
 
-        if check_sell_signal and direction == 'S'  and self.count(6, 1, h1, h2, h3, h4, h5, h6, h7, h8): # Check rapid condition
-                sig_type, diff = "RAPS1", 9
-                check_sell_signal = False
 
 
 
