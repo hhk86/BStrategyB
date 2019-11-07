@@ -136,8 +136,8 @@ class Strategy():
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
         self.fig, self.ax = plt.subplots(figsize=(20, 10))
-        self.ax.plot(self.x, self.y, color="lightgray", linewidth=1)
-        self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
+        self.ax.plot(self.x, self.y, color="black", linewidth=1)
+        # self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
         for i in range(1440):
             slope =  self.slope_list_real[i]
             if slope > 0:
@@ -146,11 +146,11 @@ class Strategy():
                 color = "green"
             else:
                 color = "blue"
-            if self.date == "":
-                self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
-            elif abs(slope) > 3:
-                self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
-                self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=2)
+            # if self.date == "":
+            #     self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
+            # if abs(slope) > 3:
+            #     # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
+            #     self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
         plt.title(self.date, size=15)
 
     def count(self, n: int, threshold: int, *args):
@@ -167,24 +167,49 @@ class Strategy():
         if n < 8:
             var1 = 0
         else:
-            var1 = round((self.yplus[n] - self.yplus[n - 7]) / self.multiplier / 8, 2)
+            var1 = round((self.yplus[n] - self.yplus[n - 8]) / self.multiplier / 8, 3)
         if n < 30:
             var2 = 0
         else:
-            var2 = round((self.yplus[n] - self.yplus[n - 29]) / self.multiplier / 30, 2)
+            var2 = round((self.yplus[n] - self.yplus[n - 30]) / self.multiplier / 30, 3)
         if n < 60:
             var3 = 0
-            var5 = 0
         else:
-            var3 = self.volitility(self.slope_list[n - 59: n + 1])
-            var5 = abs(round((self.yplus[n] - self.yplus[n - 59]) / self.multiplier / 60, 2))
+            var3 = round((self.yplus[n] - self.yplus[n - 60]) / self.multiplier / 60, 3)
+        if n < 120:
+            var4 = 10
+        else:
+            var4 = round((self.yplus[n] - self.yplus[n - 120]) / self.multiplier / 120, 3)
         if n < 240:
-            var4 = 0
-            var6 = 0
+            var5 = 10
         else:
-            var4 = self.volitility(self.slope_list[n - 239: n + 1])
-            var6 = abs(round((self.yplus[n] - self.yplus[n - 239]) / self.multiplier / 240, 2))
-        return var1, var2, var3, var4, var5, var6
+            var5 = round((self.yplus[n] - self.yplus[n - 240]) / self.multiplier / 240, 3)
+        return var1, var2, var3, var4, var5
+
+
+    def same_trend(self, var1, var2, var3, var4, var5):
+        if not (var1 > var2 and var2 > var3 and var3 > var4 and var4 > var5):
+            return False
+        elif var1 < 0 and var1 >= 0.5 * var2 and var2 >= 0.5 * var3 and var3 >= 0.5 * var4 and var4 >= 0.5 * var5:
+            return True
+        elif var1 >= 0 and var2 < 0 and var2 >= 0.5 * var3 and var3 >= 0.5 * var4 and var4 >= 0.5 * var5:
+            return True
+        elif var2 >= 0 and var3 < 0 and var1 >= 2 * var2 and var3 >= 0.5 * var4 and var4 >= 0.5 * var5:
+            return True
+        elif var3 >= 0 and var4 < 0 and var1 >= 2 * var2 and var2 >= 2 * var3 and var4 >= 0.5 * var5:
+            return True
+        elif var4 >= 0 and var5 < 0 and var1 >= 2 * var2 and var2 >= 2 * var3 and var3 >= 2 * var4:
+            return True
+        elif var5 >= 0 and var1 >= 2 * var2 and var2 >= 2 * var3 and var3 >= 2 * var4 and var4 >= 2 * var5:
+            return True
+        else:
+            return False
+
+
+
+
+
+
 
     def previous_range(self, n:int):
         if n < 60:
@@ -294,36 +319,25 @@ class Strategy():
         check_sell_signal = True
 
 
-        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
-        #     # var1, var2, var3, var4 = self.previous_trend(n - 2)
-        #     # if var1 >= - 0.125 and var2 >= - 0.125 and var3 < 6 and var4 < 6: # Check stable condition
-        #     # if var3 < 6 and var4 < 6:  # Check stable condition
-        #     sig_type, diff = "RAPB1", 2
-        #     check_buy_signal = False
-        # if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
-        #     r1 = self.previous_range(n - 5)
-        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
-        #         sig_type, diff = "RAPB2", 6
-        #         check_buy_signal = False
+        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
+            sig_type, diff = "RAPB1", 2
+            check_buy_signal = False
+        if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+                sig_type, diff = "RAPB2", 6
+                check_buy_signal = False
 
-
-        # if check_sell_signal and direction == 'S' and h1>= 7: # Check rapid condition
-        #     var1, var2, var3, var4 = self.previous_trend(n - 1)
-        #     if var1 >= 0.5 and var2 >= 0.25 and var3 < 4.5 and var4 < 4.5: # Check stable condition
-        #         sig_type, diff = "RAPB0", 1
-        #         check_sell_signal = False
-        #         self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var4) +')')
-        #         self.ax.plot([self.x[n - 1 - 8], self.x[n - 1]], [self.y[n - 1 - 8], self.y[n - 1]], color="cyan")
-        #         self.ax.plot([self.x[n - 1 - 30], self.x[n - 1]], [self.y[n - 1 - 30], self.y[n - 1]], color="blue")
 
 
         if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
-            var1, var2, var3, var4, var5, var6 = self.previous_trend(n - 2)
-            if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
-                sig_type, diff = "RAPB1", 2
+            var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
+            # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
+            if var1 > var2 and var2 >var3 and var3 > var5:  # Check stable condition
+                sig_type, diff = "RAPS1", 2
                 check_sell_signal = False
                 if self.plot:
-                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var5) +',' + str(var6) +')')
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
                     self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
                     self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
                     if n > 62:
@@ -332,12 +346,39 @@ class Strategy():
                         self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
 
 
-
-        # if check_sell_signal and direction == 'S'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
-        #     r1 = self.previous_range(n - 5)
-        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1 and max(self.slope_list[n - 5: n + 1]) <= 6:  # Check stable condition
-        #         sig_type, diff = "RAPS2", 6
+        # if check_sell_signal and direction == 'S' and h1 >= 5: # Check rapid condition
+        #     var1, var2, var3, var4, var5 = self.previous_trend(n - 1)
+        #     # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
+        #     if var1 > 2 * var2 and var2 > 2 * var3 and var3 > 2 * var4 and var4 > 1.3 * var5:  # Check stable condition
+        #         sig_type, diff = "RAPS2", 2
         #         check_sell_signal = False
+        #         if self.plot:
+        #             self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
+        #             self.ax.plot([self.x[n - 1 - 8], self.x[n - 1]], [self.y[n - 1 - 8], self.y[n - 1]], color="cyan")
+        #             self.ax.plot([self.x[n - 1 - 30], self.x[n - 1]], [self.y[n - 1 - 30], self.y[n - 1]], color="blue")
+        #             if n > 62:
+        #                 self.ax.plot([self.x[n - 1 - 60], self.x[n - 1]], [self.y[n - 1 - 60], self.y[n - 1]], "--")
+        #             if n > 240:
+        #                 self.ax.plot([self.x[n - 1 - 240], self.x[n - 1]], [self.y[n - 1 - 240], self.y[n - 1]], "--")
+
+
+        if check_sell_signal and direction == 'S': # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n)
+            # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
+            # if var1 > 2 * var2 and var2 > 2 * var3 and var3 > 2 * var4 and var4 > 1.3 * var5:  # Check stable condition
+            if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
+                sig_type, diff = "RAPS2", 0
+                check_sell_signal = False
+                if self.plot:
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
+                    self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
+                    self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
+                    if n > 60:
+                        self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
+                    if n > 120:
+                        self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
+                    if n > 240:
+                        self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="gray", linestyle="dashed")
 
 
 
