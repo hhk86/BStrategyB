@@ -346,22 +346,6 @@ class Strategy():
                         self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
 
 
-        # if check_sell_signal and direction == 'S' and h1 >= 5: # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n - 1)
-        #     # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
-        #     if var1 > 2 * var2 and var2 > 2 * var3 and var3 > 2 * var4 and var4 > 1.3 * var5:  # Check stable condition
-        #         sig_type, diff = "RAPS2", 2
-        #         check_sell_signal = False
-        #         if self.plot:
-        #             self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
-        #             self.ax.plot([self.x[n - 1 - 8], self.x[n - 1]], [self.y[n - 1 - 8], self.y[n - 1]], color="cyan")
-        #             self.ax.plot([self.x[n - 1 - 30], self.x[n - 1]], [self.y[n - 1 - 30], self.y[n - 1]], color="blue")
-        #             if n > 62:
-        #                 self.ax.plot([self.x[n - 1 - 60], self.x[n - 1]], [self.y[n - 1 - 60], self.y[n - 1]], "--")
-        #             if n > 240:
-        #                 self.ax.plot([self.x[n - 1 - 240], self.x[n - 1]], [self.y[n - 1 - 240], self.y[n - 1]], "--")
-
-
         if check_sell_signal and direction == 'S': # Check rapid condition
             var1, var2, var3, var4, var5 = self.previous_trend(n)
             # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
