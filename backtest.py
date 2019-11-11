@@ -137,7 +137,7 @@ class Strategy():
 
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
-        self.fig, self.ax = plt.subplots(figsize=(60, 30))
+        self.fig, self.ax = plt.subplots(figsize=(20, 10))
         self.ax.plot(self.x, self.y, color="black", linewidth=0.5)
         self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
         for i in range(1440):
@@ -214,6 +214,28 @@ class Strategy():
         self.press_y_list = p_y_ls3
         self.ax.plot(self.support_x_list, self.support_y_list)
         self.ax.plot(self.press_x_list, self.press_y_list)
+
+
+
+
+
+        n_x_ls4 = [n_x_ls3[0],]
+        n_y_ls4 = [n_y_ls3[0],]
+        for i in range(1, len(n_x_ls3) - 1):
+            if n_y_ls3[i] <= n_y_ls3[i - 1] and n_y_ls3[i] <= n_y_ls3[i + 1]:
+                n_x_ls4.append(n_x_ls3[i])
+                n_y_ls4.append(n_y_ls3[i])
+        n_x_ls4.append(n_x_ls3[-1])
+        n_y_ls4.append(n_y_ls3[-1])
+
+
+        self.ax.plot(n_x_ls4, n_y_ls4, '*', color="violet", markersize=4)
+
+
+
+
+
+
         plt.title(self.date, size=15)
 
     def count(self, n: int, threshold: int, *args):
