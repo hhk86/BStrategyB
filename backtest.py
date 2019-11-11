@@ -319,15 +319,15 @@ class Strategy():
         check_sell_signal = True
 
 
-        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
-        #     sig_type, diff = "RAPB1", 2
-        #     check_buy_signal = False
-        # if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
-        #     r1 = self.previous_range(n - 5)
-        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
-        #         sig_type, diff = "RAPB2", 6
-        #         check_buy_signal = False
-        #
+        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
+            sig_type, diff = "RAPB1", 2
+            check_buy_signal = False
+        if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+                sig_type, diff = "RAPB2", 6
+                check_buy_signal = False
+
 
 
 
