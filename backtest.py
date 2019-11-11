@@ -84,8 +84,8 @@ class Strategy():
             self.initPlot()
 
         for n in range(1440):
-            self.RAP_Signal(n, 'B')
-            self.RAP_Signal(n, 'S')
+            self.Signal(n, 'B')
+            self.Signal(n, 'S')
 
         re = round(self.pnl / self.y[0] * 100, 2)
         re_df = pd.DataFrame([[date, re], ], columns=["date", "return"])
@@ -102,6 +102,7 @@ class Strategy():
         if re < - 1:
             print("------------", date, re, "-------------------")
         return re_df
+
 
     def initDailyParam(self, pos_type="all", date=None, i=None) -> None:
         if pos_type == "all":
@@ -133,11 +134,12 @@ class Strategy():
             self.RAPS_nadir_pos = None
             self.RAPS_nadir_price = None
 
+
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
-        self.fig, self.ax = plt.subplots(figsize=(20, 10))
-        self.ax.plot(self.x, self.y, color="lightgray", linewidth=0.5)
-        self.ax.plot(self.x, self.y, ".", color="lightgray", markersize=1)
+        self.fig, self.ax = plt.subplots(figsize=(60, 30))
+        self.ax.plot(self.x, self.y, color="black", linewidth=0.5)
+        self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
         for i in range(1440):
             slope =  self.slope_list_real[i]
             if slope > 0:
@@ -151,6 +153,67 @@ class Strategy():
             if abs(slope) > 3:
                 # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
+
+
+
+        p_x_ls1 = list()
+        p_y_ls1 = list()
+        for i in range(1, 1439):
+            if self.y[i] >= self.y[i - 1] and self.y[i] >= self.y[i + 1]:
+                p_x_ls1.append(self.x[i])
+                p_y_ls1.append(self.y[i])
+        p_x_ls2 = [p_x_ls1[0],]
+        p_y_ls2 = [p_y_ls1[0],]
+        for i in range(1, len(p_x_ls1) - 1):
+            if (p_y_ls1[i] - p_y_ls1[i - 1]) * (p_y_ls1[i + 1] - p_y_ls1[i]) > 0:
+                continue
+            else:
+                p_x_ls2.append(p_x_ls1[i])
+                p_y_ls2.append(p_y_ls1[i])
+        p_x_ls2.append(p_x_ls1[-1])
+        p_y_ls2.append(p_y_ls1[-1])
+        p_x_ls3 = [p_x_ls2[0],]
+        p_y_ls3 = [p_y_ls2[0],]
+        for i in range(1, len(p_x_ls2) - 1):
+            if p_y_ls2[i] >= p_y_ls2[i - 1] and p_y_ls2[i] >= p_y_ls2[i + 1]:
+                p_x_ls3.append(p_x_ls2[i])
+                p_y_ls3.append(p_y_ls2[i])
+        p_x_ls3.append(p_x_ls2[-1])
+        p_y_ls3.append(p_y_ls2[-1])
+
+
+
+        n_x_ls1 = list()
+        n_y_ls1 = list()
+        for i in range(1, 1439):
+            if self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]:
+                n_x_ls1.append(self.x[i])
+                n_y_ls1.append(self.y[i])
+        n_x_ls2 = [n_x_ls1[0],]
+        n_y_ls2 = [n_y_ls1[0],]
+        for i in range(1, len(n_x_ls1) - 1):
+            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) > 0:
+                continue
+            else:
+                n_x_ls2.append(n_x_ls1[i])
+                n_y_ls2.append(n_y_ls1[i])
+        n_x_ls2.append(n_x_ls1[-1])
+        n_y_ls2.append(n_y_ls1[-1])
+        n_x_ls3 = [n_x_ls2[0],]
+        n_y_ls3 = [n_y_ls2[0],]
+        for i in range(1, len(n_x_ls2) - 1):
+            if n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]:
+                n_x_ls3.append(n_x_ls2[i])
+                n_y_ls3.append(n_y_ls2[i])
+        n_x_ls3.append(n_x_ls2[-1])
+        n_y_ls3.append(n_y_ls2[-1])
+
+        self.support_x_list = n_x_ls3
+        self.support_y_list = n_y_ls3
+        self.press_x_list = p_x_ls3
+        self.press_y_list = p_y_ls3
+        self.ax.plot(self.support_x_list, self.support_y_list)
+        self.ax.plot(self.press_x_list, self.press_y_list)
         plt.title(self.date, size=15)
 
     def count(self, n: int, threshold: int, *args):
@@ -204,11 +267,6 @@ class Strategy():
             return True
         else:
             return False
-
-
-
-
-
 
 
     def previous_range(self, n:int):
@@ -267,7 +325,7 @@ class Strategy():
     def delta2h(self, delta):
         return round(delta / self.multiplier)
 
-    def RAP_Signal(self, n: int, direction: str):
+    def Signal(self, n: int, direction: str):
 
         if direction == 'B':
             self.slope_list = self.slope_list_real
@@ -338,14 +396,14 @@ class Strategy():
             if var1 > var2 and var2 >var3 and var3 > var5:  # Check stable condition
                 sig_type, diff = "RAPS1", 2
                 check_sell_signal = False
-                if self.plot:
-                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
-                    self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
-                    self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
-                    if n > 62:
-                        self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
-                    if n > 240:
-                        self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
+                # if self.plot:
+                #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
+                #     self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
+                #     self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
+                #     if n > 62:
+                #         self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
+                #     if n > 240:
+                #         self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
 
 
         if check_sell_signal and direction == 'S': # Check rapid condition
@@ -353,16 +411,16 @@ class Strategy():
             if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
                 sig_type, diff = "RAPS2", 0
                 check_sell_signal = False
-                if self.plot:
-                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
-                    self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
-                    self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
-                    if n > 60:
-                        self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
-                    if n > 120:
-                        self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
-                    if n > 240:
-                        self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
+                # if self.plot:
+                #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
+                #     self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
+                #     self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
+                #     if n > 60:
+                #         self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
+                #     if n > 120:
+                #         self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
+                #     if n > 240:
+                #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
 
 
 
