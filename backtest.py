@@ -136,8 +136,8 @@ class Strategy():
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
         self.fig, self.ax = plt.subplots(figsize=(20, 10))
-        self.ax.plot(self.x, self.y, color="black", linewidth=1)
-        # self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
+        self.ax.plot(self.x, self.y, color="lightgray", linewidth=0.5)
+        self.ax.plot(self.x, self.y, ".", color="lightgray", markersize=1)
         for i in range(1440):
             slope =  self.slope_list_real[i]
             if slope > 0:
@@ -148,9 +148,9 @@ class Strategy():
                 color = "blue"
             # if self.date == "":
             #     self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
-            # if abs(slope) > 3:
-            #     # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
-            #     self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
+            if abs(slope) > 3:
+                # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
+                self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
         plt.title(self.date, size=15)
 
     def count(self, n: int, threshold: int, *args):
@@ -288,10 +288,10 @@ class Strategy():
             if self.y[n] < b_trigger_price:
                 self.pnl += self.y[n] - self.RAPB_start_price
                 if self.plot:
-                    cl = "red" if self.y[n] > self.RAPB_start_price else "blue"
+                    cl = "red" if self.y[n] > self.RAPB_start_price else "green"
                     self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
                     self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
-                                 [self.RAPB_start_price, self.y[n]], color=cl)
+                                 [self.RAPB_start_price, self.y[n]], color=cl, linewidth=2)
                 self.initDailyParam(pos_type='B')
         if direction == 'S' and n > 2 and self.RAPS_num > 0:
             s_trigger_price =self.calTriggerPrice(n, 'S')
@@ -319,20 +319,22 @@ class Strategy():
         check_sell_signal = True
 
 
-        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
-            sig_type, diff = "RAPB1", 2
-            check_buy_signal = False
-        if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
-            r1 = self.previous_range(n - 5)
-            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
-                sig_type, diff = "RAPB2", 6
-                check_buy_signal = False
+        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
+        #     sig_type, diff = "RAPB1", 2
+        #     check_buy_signal = False
+        # if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
+        #     r1 = self.previous_range(n - 5)
+        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+        #         sig_type, diff = "RAPB2", 6
+        #         check_buy_signal = False
+        #
 
 
+
+        ###############################################################################################
 
         if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
             var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
-            # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
             if var1 > var2 and var2 >var3 and var3 > var5:  # Check stable condition
                 sig_type, diff = "RAPS1", 2
                 check_sell_signal = False
@@ -348,8 +350,6 @@ class Strategy():
 
         if check_sell_signal and direction == 'S': # Check rapid condition
             var1, var2, var3, var4, var5 = self.previous_trend(n)
-            # if var1 >= 0.5 and var2 >= 0.25 and var5 > var6: # Check stable condition
-            # if var1 > 2 * var2 and var2 > 2 * var3 and var3 > 2 * var4 and var4 > 1.3 * var5:  # Check stable condition
             if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
                 sig_type, diff = "RAPS2", 0
                 check_sell_signal = False
@@ -362,7 +362,7 @@ class Strategy():
                     if n > 120:
                         self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
                     if n > 240:
-                        self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="gray", linestyle="dashed")
+                        self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
 
 
 
