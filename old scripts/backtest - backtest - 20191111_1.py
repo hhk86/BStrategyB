@@ -9,7 +9,6 @@ import random
 from multiprocessing import Process, Queue
 import shutil
 
-
 def backtest_slice(q, ticker, plot=False):
     obj = Strategy(ticker, plot=plot)
     daily_return_slice = obj.backtest()
@@ -69,7 +68,7 @@ class Strategy():
             date_scope = self.date_list[math.floor(i * (N / n)): math.floor((i + 1) * (N / n))]
             data_slice = self.all_data[self.all_data["date"].apply(lambda s: True if s in date_scope else False)]
             data_slice.to_csv("btc/" + "\\data_slice_" + str(i) + ".csv", index=False)
-        print("Slice data into " + str(n) + " part.\n Save data slice to: " + "btc/" + self.ticker)
+        print("Slice data into " + str(n) + " part.\n Save data slice to: " + "btc/"  + self.ticker)
 
     def backtest(self) -> None:
         daily_return_slice = pd.DataFrame()
@@ -85,8 +84,8 @@ class Strategy():
             self.initPlot()
 
         for n in range(1440):
-            self.Signal(n, 'B')
-            self.Signal(n, 'S')
+            self.RAP_Signal(n, 'B')
+            self.RAP_Signal(n, 'S')
 
         re = round(self.pnl / self.y[0] * 100, 2)
         re_df = pd.DataFrame([[date, re], ], columns=["date", "return"])
@@ -94,7 +93,7 @@ class Strategy():
 
         if self.plot:
             self.ax.set_xticks(self.xtick, self.xticklabel)
-            self.ax.set_title(date + " Daily Return: " + str(re) + '%')
+            self.ax.set_title(date + " Daily Return: " + str(re) + '%' )
             self.fig.savefig("backtest/" + self.date + ".png")
             if re != 0:
                 self.fig.savefig("backtest_selected/" + self.date + ".png")
@@ -109,8 +108,8 @@ class Strategy():
             self.date = date
             df = self.all_data.iloc[1440 * i: 1440 * (i + 1)].copy()
             self.y = df["price"].tolist()
-            self.q = df["quantity"].tolist()
-            raw_slope_list = [0, ] + list(np.diff(self.y))
+            self.q = df["quantity"]. tolist()
+            raw_slope_list = [0,] + list(np.diff(self.y))
             self.multiplier = self.multiplier_df[self.multiplier_df["date"] == date]
             self.multiplier = self.multiplier["multiplier"].tolist()[0]
             self.multiplier = self.multiplier / 4 + self.y[0] / 1000 / 4
@@ -134,113 +133,13 @@ class Strategy():
             self.RAPS_nadir_pos = None
             self.RAPS_nadir_price = None
 
-
-    def smooth(self):
-        p_x_ls1 = [self.x[0], ]
-        p_y_ls1 = [self.y[0], ]
-        for i in range(1, 1439):
-            if self.y[i] >= self.y[i - 1] and self.y[i] >= self.y[i + 1]:
-                p_x_ls1.append(self.x[i])
-                p_y_ls1.append(self.y[i])
-        p_x_ls1.append(self.x[-1])
-        p_y_ls1.append(self.y[-1])
-        p_x_ls2 = [p_x_ls1[0], ]
-        p_y_ls2 = [p_y_ls1[0], ]
-        for i in range(1, len(p_x_ls1) - 1):
-            if (p_y_ls1[i] - p_y_ls1[i - 1]) * (p_y_ls1[i + 1] - p_y_ls1[i]) > 0:
-                continue
-            else:
-                p_x_ls2.append(p_x_ls1[i])
-                p_y_ls2.append(p_y_ls1[i])
-        p_x_ls2.append(p_x_ls1[-1])
-        p_y_ls2.append(p_y_ls1[-1])
-        p_x_ls3 = [p_x_ls2[0], ]
-        p_y_ls3 = [p_y_ls2[0], ]
-        for i in range(1, len(p_x_ls2) - 1):
-            if p_y_ls2[i] >= p_y_ls2[i - 1] and p_y_ls2[i] >= p_y_ls2[i + 1]:
-                p_x_ls3.append(p_x_ls2[i])
-                p_y_ls3.append(p_y_ls2[i])
-        p_x_ls3.append(p_x_ls2[-1])
-        p_y_ls3.append(p_y_ls2[-1])
-        p_x_ls4 = [p_x_ls3[0], ]
-        p_y_ls4 = [p_y_ls3[0], ]
-        for i in range(1, len(p_x_ls3) - 1):
-            if (p_y_ls3[i] - p_y_ls3[i - 1]) * (p_y_ls3[i + 1] - p_y_ls3[i]) > 0:
-                continue
-            else:
-                p_x_ls4.append(p_x_ls3[i])
-                p_y_ls4.append(p_y_ls3[i])
-        p_x_ls4.append(p_x_ls3[-1])
-        p_y_ls4.append(p_y_ls3[-1])
-        p_x_ls5 = [p_x_ls4[0], ]
-        p_y_ls5 = [p_y_ls4[0], ]
-        for i in range(1, len(p_x_ls4) - 1):
-            if p_y_ls4[i] <= p_y_ls4[i - 1] and p_y_ls4[i] <= p_y_ls4[i + 1]:
-                p_x_ls5.append(p_x_ls4[i])
-                p_y_ls5.append(p_y_ls4[i])
-        p_x_ls5.append(p_x_ls4[-1])
-        p_y_ls5.append(p_y_ls4[-1])
-
-
-
-
-        n_x_ls1 = [self.x[0], ]
-        n_y_ls1 = [self.y[0], ]
-        for i in range(1, 1439):
-            if self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]:
-                n_x_ls1.append(self.x[i])
-                n_y_ls1.append(self.y[i])
-        n_x_ls1.append(self.x[-1])
-        n_y_ls1.append(self.y[-1])
-        n_x_ls2 = [n_x_ls1[0], ]
-        n_y_ls2 = [n_y_ls1[0], ]
-        for i in range(1, len(n_x_ls1) - 1):
-            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) > 0:
-                continue
-            else:
-                n_x_ls2.append(n_x_ls1[i])
-                n_y_ls2.append(n_y_ls1[i])
-        n_x_ls2.append(n_x_ls1[-1])
-        n_y_ls2.append(n_y_ls1[-1])
-        n_x_ls3 = [n_x_ls2[0], ]
-        n_y_ls3 = [n_y_ls2[0], ]
-        for i in range(1, len(n_x_ls2) - 1):
-            if n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]:
-                n_x_ls3.append(n_x_ls2[i])
-                n_y_ls3.append(n_y_ls2[i])
-        n_x_ls3.append(n_x_ls2[-1])
-        n_y_ls3.append(n_y_ls2[-1])
-        n_x_ls4 = [n_x_ls3[0], ]
-        n_y_ls4 = [n_y_ls3[0], ]
-        for i in range(1, len(n_x_ls3) - 1):
-            if (n_y_ls3[i] - n_y_ls3[i - 1]) * (n_y_ls3[i + 1] - n_y_ls3[i]) > 0:
-                continue
-            else:
-                n_x_ls4.append(n_x_ls3[i])
-                n_y_ls4.append(n_y_ls3[i])
-        n_x_ls4.append(n_x_ls3[-1])
-        n_y_ls4.append(n_y_ls3[-1])
-        n_x_ls5 = [n_x_ls4[0], ]
-        n_y_ls5 = [n_y_ls4[0], ]
-        for i in range(1, len(n_x_ls4) - 1):
-            if n_y_ls4[i] <= n_y_ls4[i - 1] and n_y_ls4[i] <= n_y_ls4[i + 1]:
-                n_x_ls5.append(n_x_ls4[i])
-                n_y_ls5.append(n_y_ls4[i])
-        n_x_ls5.append(n_x_ls4[-1])
-        n_y_ls5.append(n_y_ls4[-1])
-        self.support_x_list = n_x_ls3
-        self.support_y_list = n_y_ls3
-        self.press_x_list = p_x_ls3
-        self.press_y_list = p_y_ls3
-
-
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
         self.fig, self.ax = plt.subplots(figsize=(20, 10))
-        self.ax.plot(self.x, self.y, color="black", linewidth=0.5)
-        self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
+        self.ax.plot(self.x, self.y, color="lightgray", linewidth=0.5)
+        self.ax.plot(self.x, self.y, ".", color="lightgray", markersize=1)
         for i in range(1440):
-            slope = self.slope_list_real[i]
+            slope =  self.slope_list_real[i]
             if slope > 0:
                 color = "red"
             elif slope < 0:
@@ -252,14 +151,6 @@ class Strategy():
             if abs(slope) > 3:
                 # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
-
-        self.smooth()
-        # self.ax.plot(self.support_x_list, self.support_y_list, color="violet")
-        # self.ax.plot(self.press_x_list, self.press_y_list, color="purple")
-        #
-        self.ax.plot(self.support_x_list, self.support_y_list, color="violet", linestyle="dashed", linewidth=0.7)
-        self.ax.plot(self.press_x_list, self.press_y_list, color="purple", linestyle="dashed", linewidth=0.7)
-
         plt.title(self.date, size=15)
 
     def count(self, n: int, threshold: int, *args):
@@ -295,6 +186,7 @@ class Strategy():
             var5 = round((self.yplus[n] - self.yplus[n - 240]) / self.multiplier / 240, 3)
         return var1, var2, var3, var4, var5
 
+
     def same_trend(self, var1, var2, var3, var4, var5):
         if not (var1 > var2 and var2 > var3 and var3 > var4 and var4 > var5):
             return False
@@ -313,7 +205,13 @@ class Strategy():
         else:
             return False
 
-    def previous_range(self, n: int):
+
+
+
+
+
+
+    def previous_range(self, n:int):
         if n < 60:
             range1 = None
         else:
@@ -339,13 +237,13 @@ class Strategy():
                 if self.RAPB_strike is False:
                     return self.RAPB_start_price - 4 * self.multiplier
                 elif H < 10:
-                    return self.RAPB_start_price + 2 / 3 * H * self.multiplier
+                    return  self.RAPB_start_price + 2 / 3 * H * self.multiplier
                 elif H < 20:
                     return self.RAPB_start_price + 4 / 5 * (H + 1) * self.multiplier
                 elif H < 30:
                     return self.RAPB_start_price + 4 / 5 * (H + 5) * self.multiplier
                 else:
-                    return self.RAPB_peak_price - 7 * self.multiplier
+                    return self.RAPB_peak_price -  7 * self.multiplier
         if direction == 'S':
             H = self.delta2h(self.RAPS_start_price - self.RAPS_nadir_price)
             if price - self.y[n - 1] <= 0:
@@ -358,18 +256,18 @@ class Strategy():
                 if self.RAPS_strike is False:
                     return self.RAPS_start_price + 4 * self.multiplier
                 elif H < 10:
-                    return self.RAPS_start_price - 2 / 3 * H * self.multiplier
+                    return  self.RAPS_start_price - 2 / 3 * H * self.multiplier
                 elif H < 20:
                     return self.RAPS_start_price - 4 / 5 * (H + 1) * self.multiplier
                 elif H < 30:
                     return self.RAPS_start_price - 4 / 5 * (H + 5) * self.multiplier
                 else:
-                    return self.RAPS_nadir_price + 7 * self.multiplier
+                    return self.RAPS_nadir_price +  7 * self.multiplier
 
     def delta2h(self, delta):
         return round(delta / self.multiplier)
 
-    def Signal(self, n: int, direction: str):
+    def RAP_Signal(self, n: int, direction: str):
 
         if direction == 'B':
             self.slope_list = self.slope_list_real
@@ -377,7 +275,7 @@ class Strategy():
             color = "gold"
             sign = 1
         elif direction == 'S':
-            self.slope_list = [- t for t in self.slope_list_real]
+            self.slope_list = [- t for t in  self.slope_list_real]
             self.yplus = [- t for t in self.y]
             color = "deeppink"
             sign = - 1
@@ -391,22 +289,24 @@ class Strategy():
                 self.pnl += self.y[n] - self.RAPB_start_price
                 if self.plot:
                     cl = "red" if self.y[n] > self.RAPB_start_price else "green"
-                    self.ax.plot([self.x[n], ], [self.y[n], ], marker='x', markersize=8, color=color)
+                    self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
                     self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
                                  [self.RAPB_start_price, self.y[n]], color=cl, linewidth=2)
                 self.initDailyParam(pos_type='B')
         if direction == 'S' and n > 2 and self.RAPS_num > 0:
-            s_trigger_price = self.calTriggerPrice(n, 'S')
+            s_trigger_price =self.calTriggerPrice(n, 'S')
             if self.y[n] > s_trigger_price:
                 self.pnl += self.RAPS_start_price - self.y[n]
                 if self.plot:
                     cl = "red" if self.y[n] < self.RAPS_start_price else "blue"
-                    self.ax.plot([self.x[n], ], [self.y[n], ], marker='x', markersize=8, color=color)
+                    self.ax.plot([self.x[n],], [self.y[n], ], marker='x', markersize=8, color=color)
                     self.ax.plot([self.RAPS_start_pos, self.RAPS_start_pos + 0.001],
-                                 [self.RAPS_start_price, 2 * self.RAPS_start_price - self.y[n]], color=cl)
+                                 [self.RAPS_start_price,  2 * self.RAPS_start_price - self.y[n]], color=cl)
                 self.initDailyParam(pos_type='S')
 
-        # Open position part
+
+
+        #Open position part
         if self.RAPB_num > 0 and direction == 'B':
             return
         if self.RAPS_num > 0 and direction == 'S':
@@ -418,85 +318,54 @@ class Strategy():
         check_buy_signal = True
         check_sell_signal = True
 
-        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2):  # Check rapid condition
+
+        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2): # Check rapid condition
         #     sig_type, diff = "RAPB1", 2
         #     check_buy_signal = False
-        # if check_buy_signal and direction == 'B' and min([h1, h2, h3, h4, h5]) >= - 2:  # Check rapid condition
+        # if check_buy_signal and direction == 'B'  and min([h1, h2, h3, h4, h5]) >= - 2: # Check rapid condition
         #     r1 = self.previous_range(n - 5)
         #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
         #         sig_type, diff = "RAPB2", 6
         #         check_buy_signal = False
-
-        if check_buy_signal and direction == 'B' and n > 60:
-            support_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.support_x_list))
-            support_y_ls = [self.y[k] for k in support_x_ls]
-            press_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.press_x_list))
-            press_y_ls = [self.y[k] for k in press_x_ls]
-            if len(support_y_ls) < 2 or len(press_y_ls) < 2:
-                if len(support_y_ls) >= 2 and support_x_ls[-1] - support_x_ls[0] > 30 \
-                and (np.diff(support_y_ls) >= 0).all() \
-                and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n]:
-                    sig_type, diff = "TRE1", 0
-                    check_buy_signal = False
-                    self.ax.plot(support_x_ls, support_y_ls, color="darkorange")
-                    slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                    self.ax.text(self.x[n], self.y[n], str(slope))
-                if len(press_y_ls) >= 2 and press_x_ls[-1] - press_x_ls[0] > 30 \
-                and (np.diff(press_y_ls) >= 0).all() \
-                and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
-                    sig_type, diff = "TRE1", 0
-                    check_buy_signal = False
-                    self.ax.plot(press_x_ls, press_y_ls, color="gold")
-                    slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                    self.ax.text(self.x[n], self.y[n], str(slope))
-
-            elif support_x_ls[-1] - support_x_ls[0] > 30 \
-            and (np.diff(support_y_ls) >= 0).all() and (np.diff(press_y_ls) >= 0).all() \
-            and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n] \
-            and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
-                sig_type, diff = "TRE1", 0
-                check_buy_signal = False
-                self.ax.plot(support_x_ls, support_y_ls, color="violet")
-                self.ax.plot(press_x_ls, press_y_ls, color="purple")
-                slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                self.ax.text(self.x[n], self.y[n], str(slope))
-
-
-
-
-
-
-        ############################### Cutting Line #############################################
-
-        # if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2):  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
-        #     if var1 > var2 and var2 > var3 and var3 > var5:  # Check stable condition
-        #         sig_type, diff = "RAPS1", 2
-        #         check_sell_signal = False
-        #         # if self.plot:
-        #         #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
-        #         #     self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
-        #         #     self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
-        #         #     if n > 62:
-        #         #         self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
-        #         #     if n > 240:
-        #         #         self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
         #
-        # if check_sell_signal and direction == 'S':  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n)
-        #     if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
-        #         sig_type, diff = "RAPS2", 0
-        #         check_sell_signal = False
-        #         # if self.plot:
-        #         #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
-        #         #     self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
-        #         #     self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
-        #         #     if n > 60:
-        #         #         self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
-        #         #     if n > 120:
-        #         #         self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
-        #         #     if n > 240:
-        #         #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
+
+
+
+        ###############################################################################################
+
+        if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2): # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
+            if var1 > var2 and var2 >var3 and var3 > var5:  # Check stable condition
+                sig_type, diff = "RAPS1", 2
+                check_sell_signal = False
+                if self.plot:
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
+                    self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
+                    self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
+                    if n > 62:
+                        self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
+                    if n > 240:
+                        self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
+
+
+        if check_sell_signal and direction == 'S': # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n)
+            if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
+                sig_type, diff = "RAPS2", 0
+                check_sell_signal = False
+                if self.plot:
+                    self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
+                    self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
+                    self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
+                    if n > 60:
+                        self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
+                    if n > 120:
+                        self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
+                    if n > 240:
+                        self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
+
+
+
 
         if not check_buy_signal or not check_sell_signal:
             if self.plot:
@@ -520,9 +389,9 @@ class Strategy():
 
     def plotSignal(self, n, diff, color):
         self.ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color=color)
-        self.ax.plot([self.x[n], ], [self.y[n], ], marker='o', color=color, markersize=5)
+        self.ax.plot([self.x[n],], [self.y[n],], marker='o', color=color, markersize=5)
 
-    def volitility(self, ls):
+    def volitility(self,  ls):
         N = len(ls)
         assembled_ls = list()
         j = 0
@@ -530,7 +399,7 @@ class Strategy():
             j += 1
         assembled_ls.append(ls[j])
         sign = np.sign(ls[j])
-        for item in ls[j + 1:]:
+        for item in ls[j + 1: ]:
             if np.sign(item) * sign >= 0:
                 assembled_ls[-1] += item
             else:
