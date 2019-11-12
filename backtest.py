@@ -228,10 +228,10 @@ class Strategy():
                 n_y_ls5.append(n_y_ls4[i])
         n_x_ls5.append(n_x_ls4[-1])
         n_y_ls5.append(n_y_ls4[-1])
-        self.support_x_list = n_x_ls3
-        self.support_y_list = n_y_ls3
-        self.press_x_list = p_x_ls3
-        self.press_y_list = p_y_ls3
+        self.support_x_list = n_x_ls5
+        self.support_y_list = n_y_ls5
+        self.press_x_list = p_x_ls5
+        self.press_y_list = p_y_ls5
 
 
     def initPlot(self) -> (plt, plt):
@@ -254,11 +254,11 @@ class Strategy():
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
 
         self.smooth()
-        # self.ax.plot(self.support_x_list, self.support_y_list, color="violet")
+        self.ax.plot(self.support_x_list, self.support_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
         # self.ax.plot(self.press_x_list, self.press_y_list, color="purple")
         #
-        self.ax.plot(self.support_x_list, self.support_y_list, color="violet", linestyle="dashed", linewidth=0.7)
-        self.ax.plot(self.press_x_list, self.press_y_list, color="purple", linestyle="dashed", linewidth=0.7)
+        # self.ax.plot(self.support_x_list, self.support_y_list, color="violet", linestyle="dashed", linewidth=0.7)
+        # self.ax.plot(self.press_x_list, self.press_y_list, color="purple", linestyle="dashed", linewidth=0.7)
 
         plt.title(self.date, size=15)
 
@@ -427,41 +427,50 @@ class Strategy():
         #         sig_type, diff = "RAPB2", 6
         #         check_buy_signal = False
 
+        # if check_buy_signal and direction == 'B' and n > 60:
+        #     support_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.support_x_list))
+        #     support_y_ls = [self.y[k] for k in support_x_ls]
+        #     press_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.press_x_list))
+        #     press_y_ls = [self.y[k] for k in press_x_ls]
+        #     if len(support_y_ls) < 2 or len(press_y_ls) < 2:
+        #         if len(support_y_ls) >= 2 and support_x_ls[-1] - support_x_ls[0] > 30 \
+        #         and (np.diff(support_y_ls) >= 0).all() \
+        #         and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n]:
+        #             sig_type, diff = "TRE1", 0
+        #             check_buy_signal = False
+        #             self.ax.plot(support_x_ls, support_y_ls, color="darkorange")
+        #             slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
+        #             self.ax.text(self.x[n], self.y[n], str(slope))
+        #         if len(press_y_ls) >= 2 and press_x_ls[-1] - press_x_ls[0] > 30 \
+        #         and (np.diff(press_y_ls) >= 0).all() \
+        #         and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
+        #             sig_type, diff = "TRE1", 0
+        #             check_buy_signal = False
+        #             self.ax.plot(press_x_ls, press_y_ls, color="gold")
+        #             slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
+        #             self.ax.text(self.x[n], self.y[n], str(slope))
+        #
+        #     elif support_x_ls[-1] - support_x_ls[0] > 30 \
+        #     and (np.diff(support_y_ls) >= 0).all() and (np.diff(press_y_ls) >= 0).all() \
+        #     and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n] \
+        #     and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
+        #         sig_type, diff = "TRE1", 0
+        #         check_buy_signal = False
+        #         self.ax.plot(support_x_ls, support_y_ls, color="violet")
+        #         self.ax.plot(press_x_ls, press_y_ls, color="purple")
+        #         slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
+        #         self.ax.text(self.x[n], self.y[n], str(slope))
+
+
         if check_buy_signal and direction == 'B' and n > 60:
-            support_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.support_x_list))
-            support_y_ls = [self.y[k] for k in support_x_ls]
-            press_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.press_x_list))
-            press_y_ls = [self.y[k] for k in press_x_ls]
-            if len(support_y_ls) < 2 or len(press_y_ls) < 2:
-                if len(support_y_ls) >= 2 and support_x_ls[-1] - support_x_ls[0] > 30 \
-                and (np.diff(support_y_ls) >= 0).all() \
-                and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n]:
-                    sig_type, diff = "TRE1", 0
+            if len(self.support_x_list) >= 3:
+                if self.support_y_list[-2] - self.support_y_list[-3] > 0 and self.support_y_list[-1] - self.support_y_list[-2] > 0\
+                and self.y[n] - self.support_y_list[-1] >= 0:
+                    sig_type, diff = "TRE2", 0
                     check_buy_signal = False
-                    self.ax.plot(support_x_ls, support_y_ls, color="darkorange")
-                    slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                    self.ax.text(self.x[n], self.y[n], str(slope))
-                if len(press_y_ls) >= 2 and press_x_ls[-1] - press_x_ls[0] > 30 \
-                and (np.diff(press_y_ls) >= 0).all() \
-                and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
-                    sig_type, diff = "TRE1", 0
-                    check_buy_signal = False
-                    self.ax.plot(press_x_ls, press_y_ls, color="gold")
-                    slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                    self.ax.text(self.x[n], self.y[n], str(slope))
-
-            elif support_x_ls[-1] - support_x_ls[0] > 30 \
-            and (np.diff(support_y_ls) >= 0).all() and (np.diff(press_y_ls) >= 0).all() \
-            and support_y_ls[0] >= self.y[n - 59] and support_y_ls[-1] <= self.y[n] \
-            and press_y_ls[0] >= self.y[n - 59] and press_y_ls[-1] <= self.y[n]:
-                sig_type, diff = "TRE1", 0
-                check_buy_signal = False
-                self.ax.plot(support_x_ls, support_y_ls, color="violet")
-                self.ax.plot(press_x_ls, press_y_ls, color="purple")
-                slope = round((self.y[n] - self.y[n - 59]) / self.multiplier / 60, 3)
-                self.ax.text(self.x[n], self.y[n], str(slope))
-
-
+                    self.ax.plot(self.support_x_list[-3: ], self.support_y_list[-3: ], color="gold")
+                    self.ax.text(self.x[n], self.y[n], '(' + str(self.support_y_list[-2]) + ',' + str(self.support_y_list[-1]) + ','
+                    + str(self.y[n]) + ')')
 
 
 
@@ -497,6 +506,9 @@ class Strategy():
         #         #         self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
         #         #     if n > 240:
         #         #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
+
+
+
 
         if not check_buy_signal or not check_sell_signal:
             if self.plot:
