@@ -175,7 +175,7 @@ class Strategy():
         p_x_ls5 = [p_x_ls4[0], ]
         p_y_ls5 = [p_y_ls4[0], ]
         for i in range(1, len(p_x_ls4) - 1):
-            if p_y_ls4[i] <= p_y_ls4[i - 1] and p_y_ls4[i] <= p_y_ls4[i + 1]:
+            if p_y_ls4[i] >= p_y_ls4[i - 1] and p_y_ls4[i] >= p_y_ls4[i + 1]:
                 p_x_ls5.append(p_x_ls4[i])
                 p_y_ls5.append(p_y_ls4[i])
         p_x_ls5.append(p_x_ls4[-1])
@@ -236,7 +236,7 @@ class Strategy():
 
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
-        self.fig, self.ax = plt.subplots(figsize=(20, 10))
+        self.fig, self.ax = plt.subplots(figsize=(30, 15))
         self.ax.plot(self.x, self.y, color="black", linewidth=0.5)
         self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
         for i in range(1440):
@@ -254,8 +254,8 @@ class Strategy():
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
 
         self.smooth()
-        self.ax.plot(self.support_x_list, self.support_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
-        # self.ax.plot(self.press_x_list, self.press_y_list, color="purple")
+        self.ax.plot(self.support_x_list, self.support_y_list, "*-", color="darkorange", linewidth=0.5, markersize=2)
+        self.ax.plot(self.press_x_list, self.press_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
         #
         # self.ax.plot(self.support_x_list, self.support_y_list, color="violet", linestyle="dashed", linewidth=0.7)
         # self.ax.plot(self.press_x_list, self.press_y_list, color="purple", linestyle="dashed", linewidth=0.7)
@@ -394,6 +394,7 @@ class Strategy():
                     self.ax.plot([self.x[n], ], [self.y[n], ], marker='x', markersize=8, color=color)
                     self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
                                  [self.RAPB_start_price, self.y[n]], color=cl, linewidth=2)
+                    self.ax.text(self.RAPB_start_pos, self.y[n], str(round(self.y[n] / self.RAPB_start_price * 100 - 100, 2)))
                 self.initDailyParam(pos_type='B')
         if direction == 'S' and n > 2 and self.RAPS_num > 0:
             s_trigger_price = self.calTriggerPrice(n, 'S')
@@ -404,6 +405,8 @@ class Strategy():
                     self.ax.plot([self.x[n], ], [self.y[n], ], marker='x', markersize=8, color=color)
                     self.ax.plot([self.RAPS_start_pos, self.RAPS_start_pos + 0.001],
                                  [self.RAPS_start_price, 2 * self.RAPS_start_price - self.y[n]], color=cl)
+                    self.ax.text(self.RAPS_start_pos, self.y[n] - 2 * self.RAPS_start_price,
+                                 str(round(self.y[n] / self.RAPS_start_price * 100 - 100, 2)))
                 self.initDailyParam(pos_type='S')
 
         # Open position part
@@ -462,8 +465,8 @@ class Strategy():
         #         self.ax.text(self.x[n], self.y[n], str(slope))
 
 
-        if check_buy_signal and direction == 'B' and n > 60:
-            support_x_ls = list(filter(lambda x: x <= n and x > n - 59, self.support_x_list))
+        if check_buy_signal and direction == 'B':
+            support_x_ls = list(filter(lambda x: x <= n and x > n - 120, self.support_x_list))
             support_y_ls = [self.y[k] for k in support_x_ls]
             if len(support_y_ls) >= 3:
                 if support_y_ls[-2] - support_y_ls[-3] > 0 and support_y_ls[-1] - support_y_ls[-2] > 0\
@@ -471,8 +474,8 @@ class Strategy():
                     sig_type, diff = "TRE2", 0
                     check_buy_signal = False
                     self.ax.plot(support_x_ls[-3: ], support_y_ls[-3: ], color="gold")
-                    self.ax.text(self.x[n], self.y[n], '(' + str(support_y_ls[-2]) + ',' + str(support_y_ls[-1]) + ','
-                    + str(self.y[n]) + ')')
+                    # self.ax.text(self.x[n], self.y[n], '(' + str(support_y_ls[-3]) + ',' + str(support_y_ls[-2])
+                    #              + ',' + str(support_y_ls[-1]) + ',' + str(self.y[n]) + ')')
 
 
 
@@ -509,6 +512,18 @@ class Strategy():
         #         #     if n > 240:
         #         #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
 
+
+        if check_sell_signal and direction == 'S':
+            press_x_ls = list(filter(lambda x: x <= n and x > n - 120, self.press_x_list))
+            press_y_ls = [self.y[k] for k in press_x_ls]
+            if len(press_y_ls) >= 3:
+                if press_y_ls[-2] - press_y_ls[-3] < 0 and press_y_ls[-1] - press_y_ls[-2] < 0\
+                and self.y[n] - press_y_ls[-1] <= 0:
+                    sig_type, diff = "TRE2", 0
+                    check_sell_signal = False
+                    self.ax.plot(press_x_ls[-3: ], press_y_ls[-3: ], color="purple")
+                    # self.ax.text(self.x[n], self.y[n], '(' + str(press_y_ls[-3]) + ',' + str(press_y_ls[-2])
+                    #              + ',' + str(press_y_ls[-1]) + ',' + str(self.y[n]) + ')')
 
 
 
