@@ -481,9 +481,7 @@ class Strategy():
 
 
         if check_buy_signal and direction == 'B' and n >= 60:
-            n_x_ls, n_y_ls = self.support_lines(n)
-            support_x_ls = list(filter(lambda x: x <= n and x > n - 120, n_x_ls))
-            support_y_ls = [self.y[k] for k in support_x_ls]
+            support_x_ls, support_y_ls = self.support_lines(n)
             if len(support_y_ls) >= 4:
                 if support_y_ls[-3] - support_y_ls[-4] > 0 and support_y_ls[-2] - support_y_ls[-3] < 0\
                 and abs(support_y_ls[-2] - support_y_ls[-3]) <= 0.5 * (support_y_ls[-3] - support_y_ls[-4]) \
@@ -491,7 +489,7 @@ class Strategy():
                 and self.y[-1] - support_y_ls[-2] >= 2 * abs(support_y_ls[-2] - support_y_ls[-3]) :
                     sig_type, diff = "TRE1", 0
                     check_buy_signal = False
-                    self.ax.plot(support_x_ls[-3: ], support_y_ls[-3: ], color="gold")
+                    self.ax.plot(support_x_ls[-4: ], support_y_ls[-4: ], color="gold")
                     # self.ax.text(self.x[n], self.y[n], '(' + str(support_y_ls[-3]) + ',' + str(support_y_ls[-2])
                     #              + ',' + str(support_y_ls[-1]) + ',' + str(self.y[n]) + ')')
 
