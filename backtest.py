@@ -229,10 +229,10 @@ class Strategy():
                 n_y_ls5.append(n_y_ls4[i])
         n_x_ls5.append(n_x_ls4[-1])
         n_y_ls5.append(n_y_ls4[-1])
-        self.support_x_list = n_x_ls5
-        self.support_y_list = n_y_ls5
-        self.press_x_list = p_x_ls5
-        self.press_y_list = p_y_ls5
+        self.support_x_list = n_x_ls3
+        self.support_y_list = n_y_ls3
+        self.press_x_list = p_x_ls3
+        self.press_y_list = p_y_ls3
 
 
     def initPlot(self) -> (plt, plt):
@@ -242,20 +242,13 @@ class Strategy():
         self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
         for i in range(1440):
             slope = self.slope_list_real[i]
-            if slope > 0:
-                color = "red"
-            elif slope < 0:
-                color = "green"
-            else:
-                color = "blue"
-            # if self.date == "":
-            #     self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
             if abs(slope) > 3:
                 # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
 
-        self.smooth()
-        self.ax.plot(self.support_x_list, self.support_y_list, "*-", color="blue", linewidth=0.5, markersize=2)
+        support_x_list, support_y_list = self.support_lines(1439)
+        self.ax.plot(support_x_list, support_y_list, "-", color="blue", linewidth=0.5)
+        self.ax.plot(support_x_list, support_y_list, "*", color="red", markersize=2)
         # self.ax.plot(self.press_x_list, self.press_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
 
         plt.title(self.date, size=15)
@@ -368,51 +361,48 @@ class Strategy():
         return round(delta / self.multiplier)
 
     def support_lines(self, n):
+        interval = 20
+        last_x = 0
         n_x_ls1 = [self.x[0], ]
         n_y_ls1 = [self.y[0], ]
         for i in range(1, n - 1):
-            if self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]:
+            if (self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]) or i - last_x >= interval:
                 n_x_ls1.append(self.x[i])
                 n_y_ls1.append(self.y[i])
+                last_x = i
         n_x_ls1.append(self.x[n])
         n_y_ls1.append(self.y[n])
+        last_x = 0
         n_x_ls2 = [n_x_ls1[0], ]
         n_y_ls2 = [n_y_ls1[0], ]
         for i in range(1, len(n_x_ls1) - 1):
-            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) > 0:
+            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) and i - last_x < interval > 0:
                 continue
             else:
                 n_x_ls2.append(n_x_ls1[i])
                 n_y_ls2.append(n_y_ls1[i])
+                last_x = i
         n_x_ls2.append(n_x_ls1[-1])
         n_y_ls2.append(n_y_ls1[-1])
+        last_x = 0
         n_x_ls3 = [n_x_ls2[0], ]
         n_y_ls3 = [n_y_ls2[0], ]
         for i in range(1, len(n_x_ls2) - 1):
-            if n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]:
+            if (n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]) or i - last_x >= interval:
                 n_x_ls3.append(n_x_ls2[i])
                 n_y_ls3.append(n_y_ls2[i])
+                last_x = i
         n_x_ls3.append(n_x_ls2[-1])
         n_y_ls3.append(n_y_ls2[-1])
-        n_x_ls4 = [n_x_ls3[0], ]
-        n_y_ls4 = [n_y_ls3[0], ]
-        for i in range(1, len(n_x_ls3) - 1):
-            if (n_y_ls3[i] - n_y_ls3[i - 1]) * (n_y_ls3[i + 1] - n_y_ls3[i]) > 0:
-                continue
-            else:
-                n_x_ls4.append(n_x_ls3[i])
-                n_y_ls4.append(n_y_ls3[i])
-        n_x_ls4.append(n_x_ls3[-1])
-        n_y_ls4.append(n_y_ls3[-1])
-        n_x_ls5 = [n_x_ls4[0], ]
-        n_y_ls5 = [n_y_ls4[0], ]
-        for i in range(1, len(n_x_ls4) - 1):
-            if n_y_ls4[i] <= n_y_ls4[i - 1] and n_y_ls4[i] <= n_y_ls4[i + 1]:
-                n_x_ls5.append(n_x_ls4[i])
-                n_y_ls5.append(n_y_ls4[i])
-        n_x_ls5.append(n_x_ls4[-1])
-        n_y_ls5.append(n_y_ls4[-1])
-        return n_x_ls5, n_y_ls5
+        last_x = - 2 * interval
+        n_x_ls4 = list()
+        n_y_ls4 = list()
+        for x, y in zip(n_x_ls3, n_y_ls3):
+            if x - last_x >= interval:
+                n_x_ls4.append(x)
+                n_y_ls4.append(y)
+                last_x = x
+        return n_x_ls4, n_y_ls4
 
     def press_lines(self, n):
         p_x_ls1 = [self.x[0], ]
@@ -460,6 +450,11 @@ class Strategy():
         p_x_ls5.append(p_x_ls4[-1])
         p_y_ls5.append(p_y_ls4[-1])
         return p_x_ls5, p_y_ls5
+
+    def support_lines2(self, p, q):
+        if q - p <= 5:
+            return
+
 
 
     def Signal(self, n: int, direction: str):
@@ -530,100 +525,6 @@ class Strategy():
         #         check_buy_signal = False
 
 
-        # Don't work
-        # if check_buy_signal and direction == 'B' and n >= 60:
-        #     support_x_ls, support_y_ls = self.support_lines(n)
-        #     if len(support_y_ls) >= 4:
-        #         if support_y_ls[-3] - support_y_ls[-4] > 0 and support_y_ls[-2] - support_y_ls[-3] > 0\
-        #         and support_y_ls[-1] - support_y_ls[-2] >= 0 and support_x_ls[-1] - support_x_ls[-2] >= 10:
-        #             sig_type, diff = "TRE0", 0
-        #             check_buy_signal = False
-        #             self.ax.plot(support_x_ls[-4: ], support_y_ls[-4: ], "*-", color="gold", markersize=2)
-        #             # self.ax.text(self.x[n], self.y[n], '(' + str(support_y_ls[-3]) + ',' + str(support_y_ls[-2])
-        #             #              + ',' + str(support_y_ls[-1]) + ',' + str(self.y[n]) + ')')
-
-
-        # Don't work
-        # if check_buy_signal and direction == 'B' and n >= 60:
-        #     support_x_ls, support_y_ls = self.support_lines(n)
-        #     support_x_ls = list(filter(lambda k: k >= n - 60, support_x_ls))
-        #     support_y_ls = [self.y[k] for k in support_x_ls]
-        #     step_array = np.diff([self.y[n - 60], ] + support_y_ls)
-        #     if (step_array >= 0).all():
-        #         max_diff = 0
-        #         a = self.y[n - 60]
-        #         k = (self.y[n] - a) / 60
-        #         for m in range(n - 60, n):
-        #             diff = self.y[m] - a - k * (m - n + 60)
-        #             if diff > max_diff:
-        #                 max_diff = diff
-        #         if max_diff < 0.8 * (self.y[n] - a):
-        #             sig_type, diff = "TRE2", 0
-        #             check_buy_signal = False
-        #             self.ax.plot([n - 60, ] + support_x_ls, [self.y[n - 60], ] + support_y_ls, "-", color="gold")
-        #             self.ax.plot([n - 60, ] + support_x_ls, [self.y[n - 60], ] + support_y_ls, "*", color="black", markersize=3)
-        #             for x_pos, y_pos in zip([n - 60, ] + support_x_ls, [self.y[n - 60], ] + support_y_ls):
-        #                 self.ax.text(x_pos, y_pos, str(round(y_pos, 1)))
-
-
-
-        # # Weak effect
-        if check_buy_signal and direction == 'B' and n >= 60:
-            support_x_ls, support_y_ls = self.support_lines(n)
-            if len(support_y_ls) >= 4:
-                if support_y_ls[-3] - support_y_ls[-4] > 0 and support_y_ls[-2] - support_y_ls[-3] < 0\
-                and abs(support_y_ls[-2] - support_y_ls[-3]) <= 1 / 3 * (support_y_ls[-3] - support_y_ls[-4]) \
-                and support_x_ls[-2] - support_x_ls[-3] <= 1 / 3 * (support_x_ls[-3] - support_x_ls[-4]) \
-                and support_y_ls[-1] - support_y_ls[-2] >= 2 * abs(support_y_ls[-2] - support_y_ls[-3]) \
-                and n - self.TREB_close_x >= 30:
-                    max_diff = 0
-                    x0 = support_x_ls[-4]
-                    a = self.y[x0]
-                    k = (self.y[n] - a) / (n - x0)
-                    for m in range(x0, n):
-                        diff = self.y[m] - a - k * (m - n + x0)
-                        if diff > max_diff:
-                            max_diff = diff
-                    if max_diff < self.y[n] - a:
-                        sig_type, diff = "TRE1", 0
-                        check_buy_signal = False
-                        self.ax.plot(support_x_ls[-4: ], support_y_ls[-4: ], color="gold")
-                    # self.ax.text(self.x[n], self.y[n], '(' + str(support_y_ls[-3]) + ',' + str(support_y_ls[-2])
-                    #              + ',' + str(support_y_ls[-1]) + ',' + str(self.y[n]) + ')')
-
-
-        # Don't work
-        # if check_buy_signal and direction == 'B' and n >= 120 and n - self.TREB_close_x >= 20:
-        #     support_x_ls, support_y_ls = self.support_lines(n)
-        #     support_x_ls = list(filter(lambda k: k >= n - 120, support_x_ls))
-        #     support_y_ls = [self.y[k] for k in support_x_ls]
-        #     step_array = np.diff([self.y[n - 120], ] + support_y_ls)
-        #     inverse_step_ls = list(filter(lambda x: x < 0, step_array.tolist()))
-        #
-        #     if self.y[n] - self.y[n -120] > 0 and - sum(inverse_step_ls) < 0.2 * (self.y[n] - self.y[n -120]):
-        #         max_diff = 0
-        #         a = self.y[n - 120]
-        #         k = (self.y[n] - a) / 120
-        #         for m in range(n - 120, n):
-        #             diff = self.y[m] - a - k * (m - n + 120)
-        #             if diff > max_diff:
-        #                 max_diff = diff
-        #         withdraw_ls = filter(lambda x: x < 0, np.diff(self.y[n - 20: n + 1]))
-        #         withdraw_sum = - sum(withdraw_ls)
-        #         if self.y[n] - self.y[n - 20] <= 0:
-        #             withdraw_ratio = 100
-        #         else:
-        #             withdraw_ratio = round(withdraw_sum / (self.y[n] - self.y[n - 20]), 3)
-        #         if max_diff < 0.3 * (self.y[n] - a) and withdraw_ratio <= 0.3:
-        #             sig_type, diff = "TRE3", 0
-        #             check_buy_signal = False
-        #             self.ax.plot([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls, "-", color="gold")
-        #             self.ax.plot([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls, "*", color="black", markersize=3)
-        #             # for x_pos, y_pos in zip([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls):
-        #             #     self.ax.text(x_pos, y_pos, str(round(y_pos, 1)))
-        #             self.ax.text(n, self.y[n], str(withdraw_ratio), color="red")
-
-
 
 
         ############################### Cutting Line #############################################
@@ -658,20 +559,6 @@ class Strategy():
         #         #     if n > 240:
         #         #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
         #
-        # if check_sell_signal and direction == 'S' and n >= 60:
-        #     press_x_ls, press_y_ls = self.press_lines(n)
-        #     if len(press_y_ls) >= 4:
-        #         if press_y_ls[-3] - press_y_ls[-4] < 0 and press_y_ls[-2] - press_y_ls[-3] > 0\
-        #         and press_y_ls[-2] - press_y_ls[-3] <= 0.5 * abs(press_y_ls[-3] - press_y_ls[-4]) \
-        #         and press_x_ls[-2] - press_x_ls[-3] <= 0.5 * (press_x_ls[-3] - press_x_ls[-4]) \
-        #         and self.y[-2] - press_y_ls[-1] >= 2 * (press_y_ls[-2] - press_y_ls[-3]) :
-        #             sig_type, diff = "TRE1", 0
-        #             check_sell_signal = False
-        #             self.ax.plot(press_x_ls[-4: ], press_y_ls[-4: ], color="gold")
-        #             # self.ax.text(self.x[n], self.y[n], '(' + str(press_y_ls[-3]) + ',' + str(press_y_ls[-2])
-        #             #              + ',' + str(press_y_ls[-1]) + ',' + str(self.y[n]) + ')')
-
-
 
 
 
