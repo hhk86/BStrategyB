@@ -567,7 +567,7 @@ class Strategy():
 
 
 
-        # # Weak effect
+
         if check_buy_signal and direction == 'B' and n >= 60:
             support_x_ls, support_y_ls = self.support_lines(n)
             if len(support_y_ls) >= 4:
@@ -575,7 +575,7 @@ class Strategy():
                 and abs(support_y_ls[-2] - support_y_ls[-3]) <= 1 / 3 * (support_y_ls[-3] - support_y_ls[-4]) \
                 and support_x_ls[-2] - support_x_ls[-3] <= 1 / 3 * (support_x_ls[-3] - support_x_ls[-4]) \
                 and support_y_ls[-1] - support_y_ls[-2] >= 2 * abs(support_y_ls[-2] - support_y_ls[-3]) \
-                and n - self.TREB_close_x >= 30:
+                and n - self.TREB_close_x >= 20:
                     max_diff = 0
                     x0 = support_x_ls[-4]
                     a = self.y[x0]
@@ -608,20 +608,13 @@ class Strategy():
         #             diff = self.y[m] - a - k * (m - n + 120)
         #             if diff > max_diff:
         #                 max_diff = diff
-        #         withdraw_ls = filter(lambda x: x < 0, np.diff(self.y[n - 20: n + 1]))
-        #         withdraw_sum = - sum(withdraw_ls)
-        #         if self.y[n] - self.y[n - 20] <= 0:
-        #             withdraw_ratio = 100
-        #         else:
-        #             withdraw_ratio = round(withdraw_sum / (self.y[n] - self.y[n - 20]), 3)
-        #         if max_diff < 0.3 * (self.y[n] - a) and withdraw_ratio <= 0.3:
+        #         if max_diff < 0.3 * (self.y[n] - a):
         #             sig_type, diff = "TRE3", 0
         #             check_buy_signal = False
         #             self.ax.plot([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls, "-", color="gold")
         #             self.ax.plot([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls, "*", color="black", markersize=3)
-        #             # for x_pos, y_pos in zip([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls):
-        #             #     self.ax.text(x_pos, y_pos, str(round(y_pos, 1)))
-        #             self.ax.text(n, self.y[n], str(withdraw_ratio), color="red")
+        #             for x_pos, y_pos in zip([n - 120, ] + support_x_ls, [self.y[n - 120], ] + support_y_ls):
+        #                 self.ax.text(x_pos, y_pos, str(round(y_pos, 1)))
 
 
 
