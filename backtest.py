@@ -136,105 +136,6 @@ class Strategy():
             self.RAPS_nadir_price = None
 
 
-    def smooth(self):
-        p_x_ls1 = [self.x[0], ]
-        p_y_ls1 = [self.y[0], ]
-        for i in range(1, 1439):
-            if self.y[i] >= self.y[i - 1] and self.y[i] >= self.y[i + 1]:
-                p_x_ls1.append(self.x[i])
-                p_y_ls1.append(self.y[i])
-        p_x_ls1.append(self.x[-1])
-        p_y_ls1.append(self.y[-1])
-        p_x_ls2 = [p_x_ls1[0], ]
-        p_y_ls2 = [p_y_ls1[0], ]
-        for i in range(1, len(p_x_ls1) - 1):
-            if (p_y_ls1[i] - p_y_ls1[i - 1]) * (p_y_ls1[i + 1] - p_y_ls1[i]) > 0:
-                continue
-            else:
-                p_x_ls2.append(p_x_ls1[i])
-                p_y_ls2.append(p_y_ls1[i])
-        p_x_ls2.append(p_x_ls1[-1])
-        p_y_ls2.append(p_y_ls1[-1])
-        p_x_ls3 = [p_x_ls2[0], ]
-        p_y_ls3 = [p_y_ls2[0], ]
-        for i in range(1, len(p_x_ls2) - 1):
-            if p_y_ls2[i] >= p_y_ls2[i - 1] and p_y_ls2[i] >= p_y_ls2[i + 1]:
-                p_x_ls3.append(p_x_ls2[i])
-                p_y_ls3.append(p_y_ls2[i])
-        p_x_ls3.append(p_x_ls2[-1])
-        p_y_ls3.append(p_y_ls2[-1])
-        p_x_ls4 = [p_x_ls3[0], ]
-        p_y_ls4 = [p_y_ls3[0], ]
-        for i in range(1, len(p_x_ls3) - 1):
-            if (p_y_ls3[i] - p_y_ls3[i - 1]) * (p_y_ls3[i + 1] - p_y_ls3[i]) > 0:
-                continue
-            else:
-                p_x_ls4.append(p_x_ls3[i])
-                p_y_ls4.append(p_y_ls3[i])
-        p_x_ls4.append(p_x_ls3[-1])
-        p_y_ls4.append(p_y_ls3[-1])
-        p_x_ls5 = [p_x_ls4[0], ]
-        p_y_ls5 = [p_y_ls4[0], ]
-        for i in range(1, len(p_x_ls4) - 1):
-            if p_y_ls4[i] >= p_y_ls4[i - 1] and p_y_ls4[i] >= p_y_ls4[i + 1]:
-                p_x_ls5.append(p_x_ls4[i])
-                p_y_ls5.append(p_y_ls4[i])
-        p_x_ls5.append(p_x_ls4[-1])
-        p_y_ls5.append(p_y_ls4[-1])
-
-
-
-
-        n_x_ls1 = [self.x[0], ]
-        n_y_ls1 = [self.y[0], ]
-        for i in range(1, 1439):
-            if self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]:
-                n_x_ls1.append(self.x[i])
-                n_y_ls1.append(self.y[i])
-        n_x_ls1.append(self.x[-1])
-        n_y_ls1.append(self.y[-1])
-        n_x_ls2 = [n_x_ls1[0], ]
-        n_y_ls2 = [n_y_ls1[0], ]
-        for i in range(1, len(n_x_ls1) - 1):
-            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) > 0:
-                continue
-            else:
-                n_x_ls2.append(n_x_ls1[i])
-                n_y_ls2.append(n_y_ls1[i])
-        n_x_ls2.append(n_x_ls1[-1])
-        n_y_ls2.append(n_y_ls1[-1])
-        n_x_ls3 = [n_x_ls2[0], ]
-        n_y_ls3 = [n_y_ls2[0], ]
-        for i in range(1, len(n_x_ls2) - 1):
-            if n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]:
-                n_x_ls3.append(n_x_ls2[i])
-                n_y_ls3.append(n_y_ls2[i])
-        n_x_ls3.append(n_x_ls2[-1])
-        n_y_ls3.append(n_y_ls2[-1])
-        n_x_ls4 = [n_x_ls3[0], ]
-        n_y_ls4 = [n_y_ls3[0], ]
-        for i in range(1, len(n_x_ls3) - 1):
-            if (n_y_ls3[i] - n_y_ls3[i - 1]) * (n_y_ls3[i + 1] - n_y_ls3[i]) > 0:
-                continue
-            else:
-                n_x_ls4.append(n_x_ls3[i])
-                n_y_ls4.append(n_y_ls3[i])
-        n_x_ls4.append(n_x_ls3[-1])
-        n_y_ls4.append(n_y_ls3[-1])
-        n_x_ls5 = [n_x_ls4[0], ]
-        n_y_ls5 = [n_y_ls4[0], ]
-        for i in range(1, len(n_x_ls4) - 1):
-            if n_y_ls4[i] <= n_y_ls4[i - 1] and n_y_ls4[i] <= n_y_ls4[i + 1]:
-                n_x_ls5.append(n_x_ls4[i])
-                n_y_ls5.append(n_y_ls4[i])
-        n_x_ls5.append(n_x_ls4[-1])
-        n_y_ls5.append(n_y_ls4[-1])
-        self.support_x_list = n_x_ls3
-        self.support_y_list = n_y_ls3
-        self.press_x_list = p_x_ls3
-        self.press_y_list = p_y_ls3
-
-
     def initPlot(self) -> (plt, plt):
         y_offset = self.y[0] / 1000 * 0.5
         self.fig, self.ax = plt.subplots(figsize=(30, 15))
@@ -246,16 +147,18 @@ class Strategy():
                 # self.ax.text(self.x[i] - 1, self.y[i] + y_offset, str(abs(slope)), fontsize=10, color=color)
                 self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
 
-        support_x_list, support_y_list = self.support_lines(1439)
+        # support_x_list, support_y_list = self.support_lines(1439)
+        support_x_list = self.support_xs(0, 1439) + [1439, ]
+        support_y_list = [self.y[k] for k in support_x_list]
         self.ax.plot(support_x_list, support_y_list, "-", color="blue", linewidth=0.5)
-        self.ax.plot(support_x_list, support_y_list, "*", color="red", markersize=2)
+        # self.ax.plot(support_x_list, support_y_list, "*", color="red", markersize=2)
         # self.ax.plot(self.press_x_list, self.press_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
 
         plt.title(self.date, size=15)
 
-    def count(self, n: int, threshold: int, *args):
+    def count(self, n: int, threshold: int, ls):
         k = 0
-        for h in args:
+        for h in ls:
             if h >= threshold:
                 k += 1
         if k >= n:
@@ -360,101 +263,26 @@ class Strategy():
     def delta2h(self, delta):
         return round(delta / self.multiplier)
 
-    def support_lines(self, n):
-        interval = 20
-        last_x = 0
-        n_x_ls1 = [self.x[0], ]
-        n_y_ls1 = [self.y[0], ]
-        for i in range(1, n - 1):
-            if (self.y[i] <= self.y[i - 1] and self.y[i] <= self.y[i + 1]) or i - last_x >= interval:
-                n_x_ls1.append(self.x[i])
-                n_y_ls1.append(self.y[i])
-                last_x = i
-        n_x_ls1.append(self.x[n])
-        n_y_ls1.append(self.y[n])
-        last_x = 0
-        n_x_ls2 = [n_x_ls1[0], ]
-        n_y_ls2 = [n_y_ls1[0], ]
-        for i in range(1, len(n_x_ls1) - 1):
-            if (n_y_ls1[i] - n_y_ls1[i - 1]) * (n_y_ls1[i + 1] - n_y_ls1[i]) and i - last_x < interval > 0:
-                continue
-            else:
-                n_x_ls2.append(n_x_ls1[i])
-                n_y_ls2.append(n_y_ls1[i])
-                last_x = i
-        n_x_ls2.append(n_x_ls1[-1])
-        n_y_ls2.append(n_y_ls1[-1])
-        last_x = 0
-        n_x_ls3 = [n_x_ls2[0], ]
-        n_y_ls3 = [n_y_ls2[0], ]
-        for i in range(1, len(n_x_ls2) - 1):
-            if (n_y_ls2[i] <= n_y_ls2[i - 1] and n_y_ls2[i] <= n_y_ls2[i + 1]) or i - last_x >= interval:
-                n_x_ls3.append(n_x_ls2[i])
-                n_y_ls3.append(n_y_ls2[i])
-                last_x = i
-        n_x_ls3.append(n_x_ls2[-1])
-        n_y_ls3.append(n_y_ls2[-1])
-        last_x = - 2 * interval
-        n_x_ls4 = list()
-        n_y_ls4 = list()
-        for x, y in zip(n_x_ls3, n_y_ls3):
-            if x - last_x >= interval:
-                n_x_ls4.append(x)
-                n_y_ls4.append(y)
-                last_x = x
-        return n_x_ls4, n_y_ls4
-
-    def press_lines(self, n):
-        p_x_ls1 = [self.x[0], ]
-        p_y_ls1 = [self.y[0], ]
-        for i in range(1, n - 1):
-            if self.y[i] >= self.y[i - 1] and self.y[i] >= self.y[i + 1]:
-                p_x_ls1.append(self.x[i])
-                p_y_ls1.append(self.y[i])
-        p_x_ls1.append(self.x[n])
-        p_y_ls1.append(self.y[n])
-        p_x_ls2 = [p_x_ls1[0], ]
-        p_y_ls2 = [p_y_ls1[0], ]
-        for i in range(1, len(p_x_ls1) - 1):
-            if (p_y_ls1[i] - p_y_ls1[i - 1]) * (p_y_ls1[i + 1] - p_y_ls1[i]) > 0:
-                continue
-            else:
-                p_x_ls2.append(p_x_ls1[i])
-                p_y_ls2.append(p_y_ls1[i])
-        p_x_ls2.append(p_x_ls1[-1])
-        p_y_ls2.append(p_y_ls1[-1])
-        p_x_ls3 = [p_x_ls2[0], ]
-        p_y_ls3 = [p_y_ls2[0], ]
-        for i in range(1, len(p_x_ls2) - 1):
-            if p_y_ls2[i] >= p_y_ls2[i - 1] and p_y_ls2[i] >= p_y_ls2[i + 1]:
-                p_x_ls3.append(p_x_ls2[i])
-                p_y_ls3.append(p_y_ls2[i])
-        p_x_ls3.append(p_x_ls2[-1])
-        p_y_ls3.append(p_y_ls2[-1])
-        p_x_ls4 = [p_x_ls3[0], ]
-        p_y_ls4 = [p_y_ls3[0], ]
-        for i in range(1, len(p_x_ls3) - 1):
-            if (p_y_ls3[i] - p_y_ls3[i - 1]) * (p_y_ls3[i + 1] - p_y_ls3[i]) > 0:
-                continue
-            else:
-                p_x_ls4.append(p_x_ls3[i])
-                p_y_ls4.append(p_y_ls3[i])
-        p_x_ls4.append(p_x_ls3[-1])
-        p_y_ls4.append(p_y_ls3[-1])
-        p_x_ls5 = [p_x_ls4[0], ]
-        p_y_ls5 = [p_y_ls4[0], ]
-        for i in range(1, len(p_x_ls4) - 1):
-            if p_y_ls4[i] >= p_y_ls4[i - 1] and p_y_ls4[i] >= p_y_ls4[i + 1]:
-                p_x_ls5.append(p_x_ls4[i])
-                p_y_ls5.append(p_y_ls4[i])
-        p_x_ls5.append(p_x_ls4[-1])
-        p_y_ls5.append(p_y_ls4[-1])
-        return p_x_ls5, p_y_ls5
-
-    def support_lines2(self, p, q):
-        if q - p <= 5:
-            return
-
+    def support_xs(self, p, q):
+        if q - p >= 8:
+            ls = list(range(p, q + 1))
+            if q - p in {11, 12, 13}:
+                ls.pop(7)
+                ls.pop(-7)
+            elif q - p == 14:
+                ls.pop(7)
+            elif q - p >= 15:
+                ls.pop(7)
+                ls.pop(-8)
+            ls = ls[4: -4]
+            simplified_y_ls = [self.y[k] for k in ls]
+            min_position = simplified_y_ls.index(min(simplified_y_ls))
+            pos = ls[min_position]
+            return self.support_xs(p, pos) + self.support_xs(pos, q)
+        elif q - p in {4, 5, 6}:
+            return [p, ]
+        else:
+            raise ValueError("Wrong interval: " + str(q - p))
 
 
     def Signal(self, n: int, direction: str):
@@ -523,6 +351,35 @@ class Strategy():
         #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
         #         sig_type, diff = "RAPB2", 6
         #         check_buy_signal = False
+
+
+        # Don't work
+        # if check_buy_signal and direction == 'B' and n > 4:
+        #     support_x_list = self.support_xs(0, n) + [n, ]
+        #     support_x_list = list(filter(lambda k: k >= n - 30, support_x_list))
+        #     support_y_list = [self.y[k] for k in support_x_list]
+        #     if len(support_y_list) >= 4 and support_y_list[-1] - support_y_list[-2] > support_y_list[-2] - support_y_list[-3] \
+        #     and support_y_list[-2] - support_y_list[-3] > support_y_list[-3] - support_y_list[-4] \
+        #     and support_y_list[-3] - support_y_list[-4] >0:
+        #         sig_type, diff = "TRE1", 0
+        #         check_buy_signal = False
+        #         self.ax.plot(support_x_list[-4: ], support_y_list[-4: ], '-', color="gold")
+        #         self.ax.plot(support_x_list[-4: ], support_y_list[-4: ], '*', color="black", markersize=3)
+        #         self.ax.text(self.x[n], self.y[n], '(' + str(round(support_y_list[-1] - support_y_list[-2], 2)) + ',' \
+        #                      + str(round(support_y_list[-2] - support_y_list[-3], 2)) + ',' \
+        #                      + str(round(support_y_list[-3] - support_y_list[-4], 2)) + ')')
+
+
+        if check_buy_signal and direction == 'B' and n > 40:
+            support_x_list = self.support_xs(0, n) + [n, ]
+            support_x_list = list(filter(lambda k: k >= n - 40, support_x_list))
+            support_y_list = [self.y[k] for k in support_x_list]
+            if len(support_y_list) >= 4 and (np.diff(support_y_list[-8:]) > 0).all():
+                    sig_type, diff = "TRE1", 0
+                    check_buy_signal = False
+                    self.ax.plot(support_x_list[-8: ], support_y_list[-8: ], '-', color="gold")
+                    self.ax.plot(support_x_list[-8: ], support_y_list[-8: ], '*', color="black", markersize=3)
+
 
 
 
@@ -635,7 +492,7 @@ class Strategy():
         plt.plot(range(len(df)), df["log_asset"])
         plt.savefig("log_asset_" + str(log_final_asset) + ".png")
         plt.close()
-        df["log_level_asset"] = df["level_asset"].apply(lambda x: math.log(x))
+        df["log_level_asset"] = df["level_asset"].apply(lambda x: math.log(x) if x > 0 else 0)
         log_level_asset = round(df["log_level_asset"].tolist()[-1], 2)
         plt.plot(range(len(df)), df["log_level_asset"])
         plt.savefig("log_level_asset_" + str(log_level_asset) + ".png")
