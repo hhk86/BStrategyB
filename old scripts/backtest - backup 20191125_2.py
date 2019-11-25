@@ -287,30 +287,30 @@ class Strategy():
         check_buy_signal = True
         check_sell_signal = True
 
-        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2):  # Check rapid condition
-        #     sig_type, diff = "RAPB1", 2
-        #     check_buy_signal = False
-        #
-        # if check_buy_signal and direction == 'B' and min([h1, h2, h3, h4, h5]) >= - 2:  # Check rapid condition
-        #     r1 = self.previous_range(n - 5)
-        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
-        #         sig_type, diff = "RAPB2", 6
-        #         check_buy_signal = False
+        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2):  # Check rapid condition
+            sig_type, diff = "RAPB1", 2
+            check_buy_signal = False
+
+        if check_buy_signal and direction == 'B' and min([h1, h2, h3, h4, h5]) >= - 2:  # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+                sig_type, diff = "RAPB2", 6
+                check_buy_signal = False
 
 
         ############################### Cutting Line #############################################
 
-        # if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2):  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
-        #     if var1 > var2 and var2 > var3 and var3 > var5:  # Check stable condition
-        #         sig_type, diff = "RAPS1", 2
-        #         check_sell_signal = False
-        # #
-        # if check_sell_signal and direction == 'S':  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n)
-        #     if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
-        #         sig_type, diff = "RAPS2", 0
-        #         check_sell_signal = False
+        if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2):  # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
+            if var1 > var2 and var2 > var3 and var3 > var5:  # Check stable condition
+                sig_type, diff = "RAPS1", 2
+                check_sell_signal = False
+
+        if check_sell_signal and direction == 'S':  # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n)
+            if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
+                sig_type, diff = "RAPS2", 0
+                check_sell_signal = False
 
 
 

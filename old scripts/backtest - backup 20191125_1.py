@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
+import datetime as dt
 import matplotlib.pyplot as plt
 import math
+import sys
 import os
+import random
 from multiprocessing import Process, Queue
+import shutil
 
 
 def backtest_slice(q, ticker, plot=False):
@@ -28,6 +32,13 @@ class Strategy():
         self.plot = plot
 
     def multi_backtest(self, plot=False):
+        try:
+            shutil.rmtree("backtest_selected")
+        except FileNotFoundError:
+            pass
+        os.makedirs("backtest_selected")
+        if os.path.exists("daily_return.csv"):
+            os.remove("daily_return.csv")
         if not os.path.exists(self.ticker + "/data_slice_9.csv"):
             self.slice()
         q = Queue()
@@ -79,14 +90,18 @@ class Strategy():
 
         re = round(self.pnl / self.y[0] * 100, 2)
         re_df = pd.DataFrame([[date, re], ], columns=["date", "return"])
-
+        # re_df.to_csv("daily_return.csv", mode='a', index=None, header=None)
 
         if self.plot:
             self.ax.set_xticks(self.xtick, self.xticklabel)
             self.ax.set_title(date + " Daily Return: " + str(re) + '%')
             self.fig.savefig("backtest/" + self.date + ".png")
+            if re != 0:
+                self.fig.savefig("backtest_selected/" + self.date + ".png")
             plt.close()
         print(date)
+        if re < - 1:
+            print("------------", date, re, "-------------------")
         return re_df
 
     def initDailyParam(self, pos_type="all", date=None, i=None) -> None:
@@ -104,6 +119,7 @@ class Strategy():
             self.y_max = df["price"].max()
             self.y_mid = 0.5 * (self.y_min + self.y_max)
             self.pnl = 0
+            self.TREB_close_x = - 1000
         if pos_type == 'B' or pos_type == "all":
             self.RAPB_num = 0
             self.RAPB_sig_type = None
@@ -119,12 +135,35 @@ class Strategy():
             self.RAPS_nadir_pos = None
             self.RAPS_nadir_price = None
 
+
     def initPlot(self) -> (plt, plt):
         self.fig, self.ax = plt.subplots(figsize=(30, 15))
         self.ax.plot(self.x, self.y, color="black", linewidth=0.5)
         self.ax.plot(self.x, self.y, ".", color="black", markersize=1)
+        # for i in range(1440):
+        #     slope = self.slope_list_real[i]
+        #     if abs(slope) > 3:
+        #         self.ax.plot(self.x[i], self.y[i], ".", color="black", markersize=3)
+        #         self.ax.text(self.x[i], self.y[i], slope)
+
+
+        # support_x_list, support_y_list = self.support_lines(1439)
+        # self.ax.plot(support_x_list, support_y_list, "-", color="blue", linewidth=0.5)
+        # self.ax.plot(support_x_list, support_y_list, "*", color="red", markersize=2)
+        # self.ax.plot(self.press_x_list, self.press_y_list, "*-", color="violet", linewidth=0.5, markersize=2)
 
         plt.title(self.date, size=15)
+
+    # def count(self, n: int, threshold: int, ls):
+    #     k = 0
+    #     for h in ls:
+    #         if h >= threshold:
+    #             k += 1
+    #     if k >= n:
+    #         return True
+    #     else:
+    #         return False
+
 
     def count(self, n: int, threshold: int, *args):
         k = 0
@@ -135,6 +174,8 @@ class Strategy():
             return True
         else:
             return False
+
+
 
     def previous_trend(self, n: int):
         if n < 8:
@@ -233,6 +274,42 @@ class Strategy():
     def delta2h(self, delta):
         return round(delta / self.multiplier)
 
+    def support_xs(self, p, q):
+        if q - p >= 8:
+            ls = list(range(p, q + 1))
+            if q - p in {11, 12, 13}:
+                ls.pop(7)
+                ls.pop(-7)
+            elif q - p == 14:
+                ls.pop(7)
+            elif q - p >= 15:
+                ls.pop(7)
+                ls.pop(-8)
+            ls = ls[4: -4]
+            simplified_y_ls = [self.y[k] for k in ls]
+            min_position = simplified_y_ls.index(min(simplified_y_ls))
+            pos = ls[min_position]
+            return self.support_xs(p, pos) + self.support_xs(pos, q)
+        elif q - p in {4, 5, 6}:
+            return [p, ]
+        else:
+            raise ValueError("Wrong interval: " + str(q - p))
+
+    def support_lines(self, n):
+        support_x_list = self.support_xs(0, n) + [n, ]
+        support_y_list = [self.y[k] for k in support_x_list]
+        x_ls = [support_x_list[0], ]
+        y_ls = [support_y_list[0], ]
+        for k in range(1, len(support_x_list) - 1):
+            if (support_y_list[k] - support_y_list[k -1]) * (support_y_list[k + 1] - support_y_list[k]) < 0:
+                x_ls.append(support_x_list[k])
+                y_ls.append(support_y_list[k])
+            else:
+                continue
+        x_ls.append(support_x_list[-1])
+        y_ls.append(support_y_list[-1])
+        return x_ls, y_ls
+
     def Signal(self, n: int, direction: str):
 
         if direction == 'B':
@@ -259,6 +336,8 @@ class Strategy():
                     self.ax.plot([self.RAPB_start_pos, self.RAPB_start_pos + 0.001],
                                  [self.RAPB_start_price, self.y[n]], color=cl, linewidth=2)
                     self.ax.text(self.RAPB_start_pos, self.y[n], str(round(self.y[n] / self.RAPB_start_price * 100 - 100, 2)))
+                if self.RAPB_sig_type.startswith("TRE"):
+                    self.TREB_close_x = n
                 self.initDailyParam(pos_type='B')
         if direction == 'S' and n > 2 and self.RAPS_num > 0:
             s_trigger_price = self.calTriggerPrice(n, 'S')
@@ -275,6 +354,7 @@ class Strategy():
 
 
 
+
         # Open position part
         if self.RAPB_num > 0 and direction == 'B':
             return
@@ -287,30 +367,51 @@ class Strategy():
         check_buy_signal = True
         check_sell_signal = True
 
-        # if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2):  # Check rapid condition
-        #     sig_type, diff = "RAPB1", 2
-        #     check_buy_signal = False
-        #
-        # if check_buy_signal and direction == 'B' and min([h1, h2, h3, h4, h5]) >= - 2:  # Check rapid condition
-        #     r1 = self.previous_range(n - 5)
-        #     if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
-        #         sig_type, diff = "RAPB2", 6
-        #         check_buy_signal = False
+        if check_buy_signal and direction == 'B' and self.count(2, 5, h1, h2):  # Check rapid condition
+            sig_type, diff = "RAPB1", 2
+            check_buy_signal = False
+
+        if check_buy_signal and direction == 'B' and min([h1, h2, h3, h4, h5]) >= - 2:  # Check rapid condition
+            r1 = self.previous_range(n - 5)
+            if r1 is not None and sign * (self.y[n] - self.y[n - 5]) > 2 * r1:  # Check stable condition
+                sig_type, diff = "RAPB2", 6
+                check_buy_signal = False
+
 
 
         ############################### Cutting Line #############################################
 
-        # if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2):  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
-        #     if var1 > var2 and var2 > var3 and var3 > var5:  # Check stable condition
-        #         sig_type, diff = "RAPS1", 2
-        #         check_sell_signal = False
-        # #
-        # if check_sell_signal and direction == 'S':  # Check rapid condition
-        #     var1, var2, var3, var4, var5 = self.previous_trend(n)
-        #     if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
-        #         sig_type, diff = "RAPS2", 0
-        #         check_sell_signal = False
+        if check_sell_signal and direction == 'S' and self.count(2, 5, h1, h2):  # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n - 2)
+            if var1 > var2 and var2 > var3 and var3 > var5:  # Check stable condition
+                sig_type, diff = "RAPS1", 2
+                check_sell_signal = False
+                # if self.plot:
+                #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) +',' + str(var5) +')')
+                #     self.ax.plot([self.x[n - 2 - 8], self.x[n - 2]], [self.y[n - 2 - 8], self.y[n - 2]], color="cyan")
+                #     self.ax.plot([self.x[n - 2 - 30], self.x[n - 2]], [self.y[n - 2 - 30], self.y[n - 2]], color="blue")
+                #     if n > 62:
+                #         self.ax.plot([self.x[n - 2 - 60], self.x[n - 2]], [self.y[n - 2 - 60], self.y[n - 2]], "--")
+                #     if n > 240:
+                #         self.ax.plot([self.x[n - 2 - 240], self.x[n - 2]], [self.y[n - 2 - 240], self.y[n - 2]], "--")
+
+        if check_sell_signal and direction == 'S':  # Check rapid condition
+            var1, var2, var3, var4, var5 = self.previous_trend(n)
+            if var1 <= 0.4 and var4 <= -0.02 and self.same_trend(var1, var2, var3, var4, var5):
+                sig_type, diff = "RAPS2", 0
+                check_sell_signal = False
+                # if self.plot:
+                #     self.ax.text(self.x[n], self.y[n], '(' + str(var1) +',' + str(var2) + ',' + str(var3) + ',' + str(var4) +',' + str(var5) +')')
+                #     self.ax.plot([self.x[n - 8], self.x[n]], [self.y[n - 8], self.y[n]], color="cyan", linestyle="dashed")
+                #     self.ax.plot([self.x[n - 30], self.x[n]], [self.y[n - 30], self.y[n]], color="blue", linestyle="dashed")
+                #     if n > 60:
+                #         self.ax.plot([self.x[n - 60], self.x[n]], [self.y[n - 60], self.y[n]], color="olive", linestyle="dashed")
+                #     if n > 120:
+                #         self.ax.plot([self.x[n - 120], self.x[n]], [self.y[n - 120], self.y[n]], color="violet", linestyle="dashed")
+                #     if n > 240:
+                #         self.ax.plot([self.x[n - 240], self.x[n]], [self.y[n - 240], self.y[n]], color="darkorange", linestyle="dashed")
+        #
+
 
 
 
@@ -337,6 +438,7 @@ class Strategy():
 
     def plotSignal(self, n, diff, color):
         self.ax.plot(self.x[n - diff: n + 1], self.y[n - diff: n + 1], color=color)
+        # self.ax.plot([self.x[n], ], [self.y[n], ], marker='o', color=color, markersize=5)
 
     def volitility(self, ls):
         N = len(ls)
